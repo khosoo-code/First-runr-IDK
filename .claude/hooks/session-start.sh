@@ -25,6 +25,9 @@ fi
 # Never run `playwright install` here.
 npm install --no-audit --no-fund --loglevel=error
 
+# Remotion project. It renders with the same pre-installed headless shell (see remotion/remotion.config.ts).
+(cd remotion && npm install --no-audit --no-fund --loglevel=error)
+
 # claude-animation plugin (hand-drawn rigs, pens, synthesized sound) and its canvas dependency.
 # Non-fatal so a GitHub hiccup doesn't block the session.
 if claude plugin marketplace add buildwithhanif/claude-animation-skill --scope project >/dev/null &&

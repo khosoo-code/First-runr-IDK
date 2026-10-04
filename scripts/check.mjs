@@ -1,7 +1,7 @@
 // Verifies the motion-studio toolchain: ffmpeg, the Python audio venv,
-// Playwright + Chromium, and the claude-animation plugin's canvas dependency.
+// Playwright + Chromium, Remotion, and the claude-animation plugin's canvas dependency.
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import path from 'node:path';
@@ -39,6 +39,15 @@ await check('playwright', async () => {
   } finally {
     await browser.close();
   }
+});
+
+await check('remotion', () => {
+  const project = path.join(root, 'remotion');
+  const pkg = path.join(project, 'node_modules/remotion/package.json');
+  if (!existsSync(pkg)) throw new Error('remotion/node_modules missing; run .claude/hooks/session-start.sh');
+  // Bundles the project and evaluates it in the render browser.
+  execFileSync('npx', ['remotion', 'compositions'], { cwd: project, stdio: 'pipe' });
+  return `remotion ${JSON.parse(readFileSync(pkg, 'utf8')).version}, bundles and loads in the browser`;
 });
 
 await check('claude-animation', () => {
