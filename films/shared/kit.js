@@ -122,6 +122,11 @@ const ICONS = {
   hoa: { vb: '0 0 100 100', paths: ['M50 12 L80 24 V48 C80 68 66 82 50 88 C34 82 20 68 20 48 V24 Z', 'M35 56 L50 43 L65 56', 'M40 52 V68 H60 V52'] },
   // Utilities: power and water.
   utility: { vb: '0 0 100 100', paths: ['M44 14 L24 54 H42 L34 86 L58 42 H40 L50 14 Z', 'M74 38 C67 50 62 57 62 64 A12 12 0 0 0 86 64 C86 57 81 50 74 38 Z'] },
+  // Utilities, one each, and the city they connect to.
+  drop: { vb: '0 0 100 100', paths: ['M50 16 C40 32 28 46 28 60 A22 22 0 0 0 72 60 C72 46 60 32 50 16 Z'] },
+  bolt: { vb: '0 0 100 100', paths: ['M56 12 L28 56 H50 L42 88 L72 42 H50 L58 12 Z'] },
+  flame: { vb: '0 0 100 100', paths: ['M50 86 C32 86 24 72 26 60 C28 46 40 40 40 26 C52 32 62 44 60 58 C64 54 66 48 66 44 C74 52 76 62 74 70 C72 80 62 86 50 86 Z'] },
+  skyline: { vb: '0 0 100 100', paths: ['M12 84 H88', 'M20 84 V44 H40 V84', 'M40 84 V24 H62 V84', 'M62 84 V54 H80 V84', 'M48 34 H54', 'M48 46 H54', 'M48 58 H54', 'M27 54 H33', 'M27 66 H33', 'M68 64 H74'] },
   // A single house in elevation, with the grove on either side.
   villa: {
     vb: '0 0 400 220',
@@ -315,9 +320,11 @@ export function background(every, at = 0) {
  * three progress bars (answered ones grey, the current one fills on the word "асуулт"), and a
  * two-line headline that glides up into the header when the answer starts.
  * at: { ask, glide, leave, out } — the word "асуулт", the start of the answer, when the
- * eyebrow leaves, and when the headline leaves.
+ * eyebrow leaves, and when the headline leaves. With glideHeader false the headline and
+ * eyebrow leave in place instead of gliding up into the header (for a question too short
+ * to hold a header).
  */
-export function hook(world, every, { numeral, current, lines, at }) {
+export function hook(world, every, { numeral, current, lines, at, glideHeader = true }) {
   const HORIZON = 1010;
   const horizon = $('div', 'abs', world);
   horizon.style.background = C.gold;
@@ -363,8 +370,9 @@ export function hook(world, every, { numeral, current, lines, at }) {
   const ask = $('div', 'abs mask eyebrow', eyebrow);
   box(ask, 3 * 62 + 18, -10);
   const askInner = $('span', '', ask, 'Асуулт');
+  const glideK = (t) => (glideHeader ? ease.inOut(prog(t, at.glide - 0.12, 0.5)) : 0);
   every((t) => {
-    const mv = ease.inOut(prog(t, at.glide - 0.12, 0.5));
+    const mv = glideK(t);
     const out = ease.in(prog(t, at.leave, 0.32));
     tf(eyebrow, 0, -678 * mv - out * 40);
     op(eyebrow, 1 - out);
@@ -386,7 +394,7 @@ export function hook(world, every, { numeral, current, lines, at }) {
   });
   const lineIn = [-0.12, at.ask - 0.24];
   every((t) => {
-    const mv = ease.inOut(prog(t, at.glide - 0.12, 0.5));
+    const mv = glideK(t);
     tf(head, 0, -660 * mv, lerp(1, 0.56, mv));
     let gone = true;
     headLines.forEach((line, i) => {

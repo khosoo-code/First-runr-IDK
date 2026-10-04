@@ -7,7 +7,7 @@ This measures the rendered audio against that log:
     within 300 ms of the placed peak
 and lists, for each spoken-word hit in beats.json, the sound that answers it.
 
-    .venv/bin/python films/shared/sync_check.py films/khantugul-q3
+    .venv/bin/python films/shared/sync_check.py films/khantugul-q3 [fps, default 60]
 """
 import json
 import sys
@@ -22,7 +22,8 @@ cues = json.loads((here / "out" / "cues.json").read_text())
 sr = 48000
 mix, _ = librosa.load(here / "out" / "mix.wav", sr=sr, mono=True)
 sfx = mix
-FRAME_MS = 1000 / 60
+FPS = float(sys.argv[2]) if len(sys.argv) > 2 else 60
+FRAME_MS = 1000 / FPS
 
 onsets = librosa.onset.onset_detect(y=mix, sr=sr, hop_length=128, units="time", delta=0.04)
 
@@ -52,7 +53,7 @@ for c in (c for c in cues if c["kind"] == "whoosh"):
 
 devs = np.abs(np.array(devs))
 print(f"sharp hits: {len(devs)}/{len(clusters)} detected in the mix, median {np.median(devs):.1f} ms, "
-      f"max {devs.max():.1f} ms, {np.mean(devs <= FRAME_MS) * 100:.0f}% within one 60 fps frame")
+      f"max {devs.max():.1f} ms, {np.mean(devs <= FRAME_MS) * 100:.0f}% within one {FPS:g} fps frame")
 if missed:
     print("  not detected (masked by a neighbour):", ", ".join(f"{t:.2f}s" for t in missed))
 wd = np.abs(np.array(whoosh_devs))
