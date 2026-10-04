@@ -225,7 +225,7 @@ export function mixer(beats) {
     console.log(`raw mix: ${raw.I.toFixed(1)} LUFS, ${raw.TP.toFixed(1)} dBTP`);
     let envelope = new Float32Array(N).fill(db(TARGET - raw.I));
     if (raw.TP + (TARGET - raw.I) > CEILING) {
-      for (let pass = 0; pass < 3; pass++) {
+      for (let pass = 0; pass < 6; pass++) {
         const gain = db(TARGET - raw.I);
         const limit = limiter(sfx, db(CEILING - 1.0) / gain);
         envelope = limit.map((g) => g * gain);

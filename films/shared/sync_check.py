@@ -3,7 +3,8 @@
 score.mjs places every sound on the beats.json grid and logs it to out/cues.json.
 This measures the rendered audio against that log:
   - sharp hits (mallet, thump, tick, pop): nearest librosa onset in out/mix.wav (2.7 ms hop)
-  - whooshes: the loudest 60 ms window of out/mix.wav within 300 ms of the placed peak
+  - whooshes: the loudest 60 ms of out/mix.wav above 500 Hz (so low hits don't count)
+    within 300 ms of the placed peak
 and lists, for each spoken-word hit in beats.json, the sound that answers it.
 
     .venv/bin/python films/shared/sync_check.py films/khantugul-q3
@@ -39,12 +40,15 @@ for group in clusters:
     d = (onsets[np.argmin(np.abs(onsets - t))] - t) * 1000 if len(onsets) else np.inf
     (devs if abs(d) <= 40 else missed).append(d if abs(d) <= 40 else t)
 
-win = int(0.06 * sr)  # long enough that a swell outweighs a 5 ms tick
-rms = np.sqrt(np.convolve(sfx**2, np.ones(win) / win, mode="same"))
+hop = 128
+spec = np.abs(librosa.stft(sfx, n_fft=1024, hop_length=hop)) ** 2
+air = spec[librosa.fft_frequencies(sr=sr, n_fft=1024) > 500].sum(axis=0)
+win = int(0.06 * sr / hop)  # 60 ms: long enough that a swell outweighs a 5 ms tick
+env = np.convolve(air, np.ones(win) / win, mode="same")
 whoosh_devs = []
 for c in (c for c in cues if c["kind"] == "whoosh"):
-    a, b = int((c["t"] - 0.3) * sr), int((c["t"] + 0.3) * sr)
-    whoosh_devs.append((a + np.argmax(rms[max(a, 0):b]) - c["t"] * sr) / sr * 1000)
+    a, b = int((c["t"] - 0.3) * sr / hop), int((c["t"] + 0.3) * sr / hop)
+    whoosh_devs.append(((max(a, 0) + np.argmax(env[max(a, 0):b])) * hop / sr - c["t"]) * 1000)
 
 devs = np.abs(np.array(devs))
 print(f"sharp hits: {len(devs)}/{len(clusters)} detected in the mix, median {np.median(devs):.1f} ms, "
