@@ -3,7 +3,7 @@
 score.mjs places every sound on the beats.json grid and logs it to out/cues.json.
 This measures the rendered audio against that log:
   - sharp hits (mallet, thump, tick, pop): nearest librosa onset in out/mix.wav (2.7 ms hop)
-  - whooshes: the loudest 60 ms window of out/sfx.wav within 300 ms of the placed peak
+  - whooshes: the loudest 60 ms window of out/mix.wav within 300 ms of the placed peak
 and lists, for each spoken-word hit in beats.json, the sound that answers it.
 
     .venv/bin/python films/khantugul-q3/sync_check.py
@@ -19,7 +19,7 @@ beats = json.loads((here / "beats.json").read_text())
 cues = json.loads((here / "out" / "cues.json").read_text())
 sr = 48000
 mix, _ = librosa.load(here / "out" / "mix.wav", sr=sr, mono=True)
-sfx, _ = librosa.load(here / "out" / "sfx.wav", sr=sr, mono=True)
+sfx = mix
 FRAME_MS = 1000 / 60
 
 onsets = librosa.onset.onset_detect(y=mix, sr=sr, hop_length=128, units="time", delta=0.04)

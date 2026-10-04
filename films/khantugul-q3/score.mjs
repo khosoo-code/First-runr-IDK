@@ -1,7 +1,6 @@
-// Synthesizes the score and SFX for the film, deterministically, from beats.json.
+// Synthesizes the film's sound effects, deterministically, from beats.json.
 // Every hit sits on the same word-level grid as the picture. Output (out/):
-//   score.wav  mallet and bell notes   sfx.wav  whooshes, thumps, ticks, clicks
-//   mix.wav    both, at -14 LUFS integrated (stems carry the same gain, so they sum to the mix)
+//   mix.wav    whooshes, low hits, ticks, clicks, pops, pencil; -14 LUFS integrated
 //
 //   node films/khantugul-q3/score.mjs
 import { spawnSync } from 'node:child_process';
@@ -18,7 +17,6 @@ const N = Math.round(beats.duration * SR);
 const TAU = Math.PI * 2;
 
 const bus = () => ({ L: new Float32Array(N), R: new Float32Array(N) });
-const score = bus();
 const sfx = bus();
 const send = bus(); // reverb send
 
@@ -48,25 +46,6 @@ function voice(b, t0, dur, p, fn, sendLevel = 0) {
       send.R[j] += v * gr * sendLevel;
     }
   }
-}
-
-// ---------------------------------------------------------------- musical hits
-const MALLET = [[1, 1, 0.9], [2, 0.3, 0.45], [3, 0.1, 0.25], [4.16, 0.05, 0.14]];
-const BELL = [[1, 1, 1.6], [2.41, 0.42, 0.7], [3.87, 0.2, 0.4], [5.43, 0.08, 0.22]];
-function mallet(t, m, gain, p = 0, partials = MALLET) {
-  cueLog.push({ t, kind: 'mallet' });
-  const f = midi(m);
-  const noise = noiseSource();
-  let lo = 0, bp = 0;
-  const fcoef = 2 * Math.sin((Math.PI * 2400) / SR);
-  voice(score, t, 2.4, p, (s) => {
-    let v = 0;
-    for (const [ratio, amp, decay] of partials) v += amp * Math.sin(TAU * f * ratio * s) * Math.exp(-s / decay);
-    lo += fcoef * bp;
-    bp += fcoef * (noise() - lo - 0.8 * bp);
-    const felt = bp * 0.9 * Math.exp(-s / 0.006);
-    return (v * Math.min(1, s / 0.003) + felt) * gain * 1.7;
-  }, 0.5);
 }
 
 // ---------------------------------------------------------------- SFX
@@ -146,45 +125,23 @@ function scribble(t, dur, gain, p = 0) {
   });
 }
 
-/** A soft tone that bends with the flexing underline on "уян хатан". */
-function bend(t, dur, gain) {
-  cueLog.push({ t: t + dur / 2, kind: 'bend' });
-  let ph = 0;
-  voice(score, t, dur, 0.2, (s) => {
-    const env = Math.sin(Math.PI * clamp(s / dur)) ** 1.5;
-    ph += (midi(78) * (1 + 0.035 * Math.sin(TAU * 3.4 * s) * env)) / SR;
-    return Math.sin(TAU * ph) * env * gain;
-  }, 0.6);
-}
-
 // ---------------------------------------------------------------- the cue sheet
 const H = hit;
 // Hook
 whoosh(H['асуулт'], { pre: 0.45, post: 0.5, from: 300, to: 1600, gain: 0.5, panFrom: 0.4, panTo: -0.2 });
 thump(H['асуулт'] + 0.02, 0.55);
-mallet(H['асуулт'], 74, 0.16, -0.1);
 whoosh(H.options + 0.2, { pre: 0.3, post: 0.35, from: 500, to: 2600, gain: 0.32, panFrom: -0.2, panTo: 0.5 });
 // Three ways to pay
-mallet(H['хувь лизинг'], 69, 0.15, -0.3);
-mallet(H['бартер'], 71, 0.15, 0);
-mallet(H['банкны зээл'], 74, 0.15, 0.3);
 for (const name of ['хувь лизинг', 'бартер', 'банкны зээл']) {
   whoosh(H[name] - 0.02, { pre: 0.22, post: 0.25, from: 900, to: 3600, gain: 0.16, panFrom: 0, panTo: 0 });
 }
 whoosh(H['төлбөрийн'], { pre: 0.28, post: 0.4, from: 400, to: 2200, gain: 0.26 });
-mallet(H['төлбөрийн'], 78, 0.1, 0.2);
-bend(H['уян хатан'] - 0.1, 1.1, 0.06);
 // In-house leasing
 whoosh(H['урьдчилгаа'] + 0.25, { pre: 0.45, post: 0.6, from: 180, to: 1400, q: 0.5, gain: 0.55, panFrom: -0.3, panTo: 0.3 });
 thump(H['30%'], 0.6);
-mallet(H['30%'], 66, 0.13, -0.2);
-mallet(H['30%'] + 0.035, 69, 0.11, 0.2);
 whoosh(H['үлдэгдэл'] + 0.1, { pre: 0.25, post: 0.3, from: 1200, to: 4200, gain: 0.14, panFrom: -0.5, panTo: 0.5 });
-mallet(H['6 сар'], 71, 0.14, 0.1);
 for (let g = 0; g < 5; g++) tick(H['6 сар'] - 0.14 + g * 0.06 + 0.12, 0.09, -0.4 + g * 0.2);
 thump(H['хүүгүй'], 0.5);
-mallet(H['хүүгүй'], 74, 0.14, 0);
-mallet(H['эсвэл'], 69, 0.1, -0.2);
 click(H['18 сар'] + 0.2, 0.3);
 {
   // One tick per number as the count runs 6 → 18 (same curve as the picture).
@@ -196,27 +153,18 @@ click(H['18 сар'] + 0.2, 0.3);
   }
 }
 thump(H['1.6%'], 0.55);
-mallet(H['1.6%'], 71, 0.12, -0.15);
-mallet(H['1.6%'] + 0.04, 74, 0.11, 0.15);
-mallet(H['төлөх боломжтой'] + 0.06, 81, 0.09, 0.2, BELL);
-mallet(H['төлөх боломжтой'] + 0.15, 86, 0.07, 0.3, BELL);
 // Barter
 whoosh(H['мөн дээрээс нь'] + 0.35, { pre: 0.5, post: 0.6, from: 220, to: 2000, q: 0.55, gain: 0.5, panFrom: 0.6, panTo: -0.6 });
 thump(H['мөн дээрээс нь'] + 0.82, 0.28);
-mallet(H['үнийн дүнгийн'], 76, 0.1, 0);
 thump(H['30% бартер'], 0.6);
-mallet(H['30% бартер'], 78, 0.13, 0.1);
 pop(H['гэрчилгээтэй'] + 0.12, 0.16, -0.35);
 pop(H['гэрчилгээтэй'] + 0.22, 0.14, 0.35);
 scribble(H['автомашин'] - 0.16, 1.0, 0.05, -0.35);
-mallet(H['автомашин'], 69, 0.11, -0.3);
 scribble(H['үл хөдлөх'] - 0.16, 1.0, 0.05, 0.35);
-mallet(H['үл хөдлөх'], 71, 0.11, 0.3);
 whoosh(H['бартерт'] + 0.4, { pre: 0.45, post: 0.45, from: 600, to: 3000, gain: 0.34, panFrom: 0.5, panTo: -0.4 });
 tick(H['бартерт'] + 0.86, 0.14, -0.3, 2400);
 // Resolve on "боломжтой."
 thump(H['боломжтой'], 0.5);
-[74, 78, 81].forEach((m, i) => mallet(H['боломжтой'] + i * 0.045, m, 0.11, -0.25 + i * 0.25, BELL));
 
 // ---------------------------------------------------------------- reverb (Freeverb)
 function freeverb(input, { room = 0.86, damp = 0.25, wet = 1 } = {}) {
@@ -257,13 +205,13 @@ function freeverb(input, { room = 0.86, damp = 0.25, wet = 1 } = {}) {
 }
 const verb = freeverb(send, { wet: 3.2 });
 for (let i = 0; i < N; i++) {
-  score.L[i] += verb.L[i];
-  score.R[i] += verb.R[i];
+  sfx.L[i] += verb.L[i];
+  sfx.R[i] += verb.R[i];
 }
 
 // ---------------------------------------------------------------- loudness and files
 // Short fades so the clip starts and ends without clicks.
-for (const b of [score, sfx]) {
+for (const b of [sfx]) {
   for (let i = 0; i < N; i++) {
     const g = Math.min(1, i / (0.01 * SR), (N - 1 - i) / (0.12 * SR));
     b.L[i] *= g;
@@ -272,8 +220,8 @@ for (const b of [score, sfx]) {
 }
 const mixBus = bus();
 for (let i = 0; i < N; i++) {
-  mixBus.L[i] = score.L[i] + sfx.L[i];
-  mixBus.R[i] = score.R[i] + sfx.R[i];
+  mixBus.L[i] = sfx.L[i];
+  mixBus.R[i] = sfx.R[i];
 }
 
 function wav(file, b, envelope) {
@@ -341,7 +289,7 @@ let envelope = new Float32Array(N).fill(db(TARGET - raw.I));
 if (raw.TP + (TARGET - raw.I) > CEILING) {
   for (let pass = 0; pass < 3; pass++) {
     const gain = db(TARGET - raw.I);
-    const limit = limiter(mixBus, db(CEILING - 0.6) / gain);
+    const limit = limiter(mixBus, db(CEILING - 1.0) / gain);
     envelope = limit.map((g) => g * gain);
     wav(probe, mixBus, envelope);
     const now = ebur128(probe);
@@ -350,8 +298,6 @@ if (raw.TP + (TARGET - raw.I) > CEILING) {
   }
 }
 wav(path.join(out, 'mix.wav'), mixBus, envelope);
-wav(path.join(out, 'score.wav'), score, envelope);
-wav(path.join(out, 'sfx.wav'), sfx, envelope);
 rmSync(probe);
 writeFileSync(path.join(out, 'cues.json'), JSON.stringify(cueLog.sort((a, b) => a.t - b.t), null, 1));
 const final = ebur128(path.join(out, 'mix.wav'));
