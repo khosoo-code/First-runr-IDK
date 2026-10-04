@@ -14,6 +14,8 @@ const TAU = Math.PI * 2;
 const TARGET = -14;
 const CEILING = -1.5;
 const db = (d) => 10 ** (d / 20);
+// Whooshes are air, not impact: they sit 8 dB under the gains the cue sheets give them.
+const WHOOSH_LEVEL = db(-8);
 const pan = (p) => [Math.cos(((p + 1) * Math.PI) / 4), Math.sin(((p + 1) * Math.PI) / 4)];
 
 export function mixer(beats) {
@@ -74,7 +76,7 @@ export function mixer(beats) {
       const j = i0 + i;
       if (j < 0 || j >= N) continue;
       const env = s < pre ? (s / pre) ** 2.4 : Math.exp(-(s - pre) / (post * 0.35));
-      const v = bp * env * gain * (1 - 0.5 * (s / dur));
+      const v = bp * env * gain * WHOOSH_LEVEL * (1 - 0.5 * (s / dur));
       const [gl, gr] = pan(lerp(panFrom, panTo, i / len));
       sfx.L[j] += v * gl;
       sfx.R[j] += v * gr;
@@ -221,25 +223,31 @@ export function mixer(beats) {
     const probe = path.join(outDir, 'mix-raw.wav');
     // Gain to the target, limiting first only if that gain would push true peaks past the ceiling.
     wav(probe, sfx);
-    let raw = ebur128(probe);
+    const raw = ebur128(probe);
     console.log(`raw mix: ${raw.I.toFixed(1)} LUFS, ${raw.TP.toFixed(1)} dBTP`);
     let envelope = new Float32Array(N).fill(db(TARGET - raw.I));
+    let deepest = 0; // largest limiter gain reduction, dB
     if (raw.TP + (TARGET - raw.I) > CEILING) {
-      for (let pass = 0; pass < 6; pass++) {
-        const gain = db(TARGET - raw.I);
-        const limit = limiter(sfx, db(CEILING - 1.0) / gain);
-        envelope = limit.map((g) => g * gain);
+      // Limiting makes loudness grow slower than gain, so step with a secant on gain → LUFS.
+      let gain = TARGET - raw.I;
+      let prev = null;
+      for (let pass = 0; pass < 8; pass++) {
+        const limit = limiter(sfx, db(CEILING - 1.0) / db(gain));
+        envelope = limit.map((g) => g * db(gain));
+        deepest = -20 * Math.log10(limit.reduce((m, g) => Math.min(m, g), 1));
         wav(probe, sfx, envelope);
         const now = ebur128(probe);
-        raw = { I: raw.I + (now.I - TARGET), TP: now.TP };
         if (Math.abs(now.I - TARGET) < 0.1 && now.TP <= CEILING) break;
+        const slope = prev ? clamp((now.I - prev.I) / (gain - prev.gain), 0.15, 1) : 1;
+        prev = { gain, I: now.I };
+        gain += (TARGET - now.I) / slope;
       }
     }
     wav(path.join(outDir, 'mix.wav'), sfx, envelope);
     rmSync(probe);
     writeFileSync(path.join(outDir, 'cues.json'), JSON.stringify(cueLog.sort((a, b) => a.t - b.t), null, 1));
     const final = ebur128(path.join(outDir, 'mix.wav'));
-    console.log(`mix.wav: ${final.I.toFixed(1)} LUFS integrated, ${final.TP.toFixed(1)} dBTP true peak (target ${TARGET} LUFS, ceiling ${CEILING} dBTP)`);
+    console.log(`mix.wav: ${final.I.toFixed(1)} LUFS integrated, ${final.TP.toFixed(1)} dBTP true peak (target ${TARGET} LUFS, ceiling ${CEILING} dBTP), limiter at most ${deepest.toFixed(1)} dB`);
   }
 
   return { thump, whoosh, tick, click, pop, scribble, master };

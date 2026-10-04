@@ -28,7 +28,7 @@ thump(H['30%'], 0.6);
 whoosh(H['үлдэгдэл'] + 0.1, { pre: 0.25, post: 0.3, from: 1200, to: 4200, gain: 0.14, panFrom: -0.5, panTo: 0.5 });
 for (let g = 0; g < 5; g++) tick(H['6 сар'] - 0.14 + g * 0.06 + 0.12, 0.09, -0.4 + g * 0.2);
 thump(H['хүүгүй'], 0.5);
-click(H['18 сар'] + 0.2, 0.3);
+click(H['18 сар'] + 0.2, 0.16);
 {
   // One tick per number as the count runs 6 → 18 (same curve as the picture).
   let last = 6;

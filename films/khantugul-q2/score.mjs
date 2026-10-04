@@ -29,7 +29,7 @@ scribble(H['нэг'] + 0.05, 1.3, 0.06, 0);
 // About how much a month
 whoosh(H['ойролцоогоор'] + 0.12, { pre: 0.2, post: 0.3, from: 1500, to: 4500, gain: 0.12, panFrom: -0.3, panTo: 0.3 });
 whoosh(H['сарын'] + 0.1, { pre: 0.25, post: 0.3, from: 600, to: 2400, gain: 0.22, panFrom: 0.3, panTo: -0.3 });
-thump(H['800 мянга'] + 0.02, 0.5);
+thump(H['800 мянга'] + 0.02, 0.4);
 pop(H['800 мянга'] - 0.04, 0.1, -0.4);
 {
   // One tick per hundred as the count runs 0 → 800 (same curve as the picture).
@@ -41,7 +41,7 @@ pop(H['800 мянга'] - 0.04, 0.1, -0.4);
   }
 }
 pop(H['1 сая'] - 0.02, 0.1, 0.2);
-click(H['1 сая'] + 0.5, 0.3);
+click(H['1 сая'] + 0.5, 0.16);
 // "хооронд": the band between the thumbs fills.
 whoosh(H['хооронд'] + 0.2, { pre: 0.25, post: 0.35, from: 1200, to: 4200, gain: 0.16, panFrom: -0.4, panTo: 0.4 });
 tick(H['хооронд'] + 0.48, 0.12, 0.2, 2400);
