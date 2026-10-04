@@ -1,5 +1,5 @@
 {
-  "source": "sequence.srt",
+  "source": "../shared/sequence.srt",
   "sequenceStart": 16.71,
   "duration": 21,
   "cues": [

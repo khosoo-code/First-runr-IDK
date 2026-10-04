@@ -31,11 +31,13 @@ const name = path.basename(filmDir);
 const outDir = path.join(filmDir, 'out');
 mkdirSync(outDir, { recursive: true });
 
-// Films load ES modules and fonts, which file:// blocks, so serve the film directory.
+// Films load ES modules and fonts, which file:// blocks, so serve the films folder; films
+// share fonts and code through films/shared.
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png', '.wav': 'audio/wav' };
+const root = path.dirname(filmDir);
 const server = http.createServer((req, res) => {
-  const file = path.join(filmDir, decodeURIComponent(new URL(req.url, 'http://x').pathname));
-  if (!file.startsWith(filmDir) || !existsSync(file) || statSync(file).isDirectory()) {
+  const file = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+  if (!file.startsWith(root + path.sep) || !existsSync(file) || statSync(file).isDirectory()) {
     res.writeHead(404).end();
     return;
   }
@@ -51,7 +53,7 @@ const pageErrors = [];
 page.on('pageerror', (err) => pageErrors.push(err.message));
 page.on('console', (msg) => msg.type() === 'error' && pageErrors.push(msg.text()));
 
-await page.goto(`${base}/index.html?render`);
+await page.goto(`${base}/${encodeURIComponent(name)}/index.html?render`);
 await page.waitForFunction(() => window.FILM && typeof window.seek === 'function');
 await page.evaluate(async () => {
   await window.ready;

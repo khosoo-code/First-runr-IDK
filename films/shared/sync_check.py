@@ -6,15 +6,16 @@ This measures the rendered audio against that log:
   - whooshes: the loudest 60 ms window of out/mix.wav within 300 ms of the placed peak
 and lists, for each spoken-word hit in beats.json, the sound that answers it.
 
-    .venv/bin/python films/khantugul-q3/sync_check.py
+    .venv/bin/python films/shared/sync_check.py films/khantugul-q3
 """
 import json
+import sys
 from pathlib import Path
 
 import librosa
 import numpy as np
 
-here = Path(__file__).parent
+here = Path(sys.argv[1])
 beats = json.loads((here / "beats.json").read_text())
 cues = json.loads((here / "out" / "cues.json").read_text())
 sr = 48000

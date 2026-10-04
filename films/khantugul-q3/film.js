@@ -1,355 +1,18 @@
 // Хан Төгөл Хотхон: "Сүүлийн асуулт" (payment terms), 9:16, 21 s.
 // Pure function of time: window.seek(t) paints frame t. Every hit comes from beats.json,
 // which is built from the reel's SRT, so each move lands on a spoken word.
-import { clamp, lerp, prog, ease, spring, mulberry32 } from './motion.js';
+import { clamp, ease, lerp, prog, spring } from '../shared/motion.js';
+import { $, C, LABEL1, LABEL2, HERO_BASE, background, boot, box, drawIcon, heroSlot, hook, ink, makeIcon, mix, op, px, shown, slot, svg, textWidth, tf, unit } from '../shared/kit.js';
 
-const W = 1080;
-const H = 1920;
-const FPS = 60;
-const RENDER = new URLSearchParams(location.search).has('render');
-const C = { cream: '#f7f6ed', white: '#ffffff', ink: '#1b1e23', gold: '#ac905f', green: '#1e4e3e' };
-
-// ---------------------------------------------------------------- fonts
-const SUBSETS = {
-  latin: 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD',
-  cyrillic: 'U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116',
-  'cyrillic-ext': 'U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F',
-};
-const FONTS = [
-  ['Noto Serif Display', 'noto-serif-display', 400, 'normal'],
-  ['Noto Serif Display', 'noto-serif-display', 500, 'normal'],
-  ['Noto Serif Display', 'noto-serif-display', 600, 'normal'],
-  ['Noto Serif Display', 'noto-serif-display', 400, 'italic'],
-  ['Manrope', 'manrope', 500, 'normal'],
-  ['Manrope', 'manrope', 600, 'normal'],
-  ['Manrope', 'manrope', 700, 'normal'],
-];
-
-async function loadFonts() {
-  const loads = [];
-  for (const [family, file, weight, style] of FONTS) {
-    for (const [subset, range] of Object.entries(SUBSETS)) {
-      const face = new FontFace(family, `url(fonts/${file}-${subset}-${weight}-${style}.woff2)`, {
-        weight: String(weight),
-        style,
-        unicodeRange: range,
-      });
-      document.fonts.add(face);
-      loads.push(face.load());
-    }
-  }
-  await Promise.all(loads);
-}
-
-// ---------------------------------------------------------------- DOM helpers
-const $ = (tag, cls, parent, html) => {
-  const e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (html !== undefined) e.innerHTML = html;
-  if (parent) parent.appendChild(e);
-  return e;
-};
-const SVG_NS = 'http://www.w3.org/2000/svg';
-const svg = (tag, attrs, parent) => {
-  const e = document.createElementNS(SVG_NS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  if (parent) parent.appendChild(e);
-  return e;
-};
-const px = (v) => `${v}px`;
-function box(e, x, y, w, h) {
-  e.style.left = px(x);
-  e.style.top = px(y);
-  if (w !== undefined) e.style.width = px(w);
-  if (h !== undefined) e.style.height = px(h);
-}
-function tf(e, x = 0, y = 0, s = 1, r = 0) {
-  e.style.transform = `translate(${x}px, ${y}px) scale(${s}) rotate(${r}deg)`;
-}
-function op(e, o) {
-  e.style.opacity = o;
-  e.style.visibility = o > 0.001 ? 'visible' : 'hidden';
-}
-const shown = (e, visible) => (e.style.visibility = visible ? 'visible' : 'hidden');
-const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-const mix = (a, b, k) => `rgb(${rgb(a).map((v, i) => Math.round(lerp(v, rgb(b)[i], k))).join(',')})`;
-
-const measure = document.createElement('canvas').getContext('2d');
-/** Ink bounds of `text` in `font`, plus the baseline offset inside a line-height:1 box. */
-function ink(text, font, size) {
-  measure.font = `${font} ${size}px "Noto Serif Display"`;
-  const m = measure.measureText(text);
-  const baseline = (size - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
-  return { left: -m.actualBoundingBoxLeft, right: m.actualBoundingBoxRight, ascent: m.actualBoundingBoxAscent, descent: m.actualBoundingBoxDescent, width: m.width, baseline };
-}
-
-// Line icons. Each path draws on through pathLength="1" dashes.
-const ICONS = {
-  calendar: { vb: '0 0 100 100', paths: ['M20 30 Q20 24 26 24 H74 Q80 24 80 30 V76 Q80 82 74 82 H26 Q20 82 20 76 Z', 'M20 42 H80', 'M36 16 V31', 'M64 16 V31'], dots: [[36, 56], [50, 56], [64, 56], [36, 69], [50, 69]] },
-  exchange: { vb: '0 0 100 100', paths: ['M22 42 C28 24 60 18 76 34', 'M62 35 H77 V20', 'M78 58 C72 76 40 82 24 66', 'M38 65 H23 V80'] },
-  bank: { vb: '0 0 100 100', paths: ['M14 38 L50 16 L86 38 Z', 'M28 46 V74', 'M43 46 V74', 'M57 46 V74', 'M72 46 V74', 'M16 82 H84'] },
-  car: {
-    vb: '0 0 220 110',
-    paths: [
-      'M30 82 H14 Q8 82 8 76 V68 Q8 58 18 56 L58 50 L84 32 Q92 26 102 26 H140 Q152 26 162 34 L182 52 L200 55 Q212 57 212 69 V76 Q212 82 206 82 H190',
-      'M62 82 H156',
-      'M46 82 m-16 0 a16 16 0 1 0 32 0 a16 16 0 1 0 -32 0',
-      'M174 82 m-16 0 a16 16 0 1 0 32 0 a16 16 0 1 0 -32 0',
-      'M70 50 L90 35 Q94 32 100 32 H117 V50 Z',
-      'M126 32 H139 Q147 32 153 38 L166 50 H126 Z',
-      'M120 56 V74',
-    ],
-  },
-  house: {
-    vb: '0 0 220 130',
-    paths: [
-      'M6 118 H214',
-      'M30 72 L100 22 L170 72',
-      'M44 62 V118',
-      'M156 62 V118',
-      'M156 84 H200 V118',
-      'M62 78 H100 V104 H62 Z',
-      'M118 118 V88 H140 V118',
-      'M128 44 V28 H140 V52',
-      'M20 118 V100',
-      'M20 100 C8 100 8 76 20 64 C32 76 32 100 20 100 Z',
-    ],
-  },
-  check: { vb: '0 0 100 100', paths: ['M28 52 L44 68 L74 36'] },
-};
-
-function makeIcon(parent, name, w, h, color, width) {
-  const def = ICONS[name];
-  const el = svg('svg', { viewBox: def.vb, width: w, height: h, fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, parent);
-  const strokes = def.paths.map((d) => svg('path', { d, pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1 }, el));
-  const dots = (def.dots ?? []).map(([cx, cy]) => svg('circle', { cx, cy, r: 4.2, fill: color, stroke: 'none' }, el));
-  return { el, strokes, dots };
-}
-/** Draw an icon's strokes on, overlapping in sequence; dots pop once the lines are in. */
-function drawIcon(icon, k) {
-  const n = icon.strokes.length;
-  const step = Math.min(0.14, 0.55 / n);
-  icon.strokes.forEach((p, i) => {
-    const pk = clamp((k - i * step) / (1 - (n - 1) * step));
-    p.setAttribute('stroke-dashoffset', 1 - ease.inOutSoft(pk));
-  });
-  icon.dots.forEach((d, i) => d.setAttribute('r', 4.2 * spring(k * 1.6 - 0.9 - i * 0.06)));
-}
-
-// ---------------------------------------------------------------- text slots
-/**
- * A slot shows one entry at a time at a fixed spot. Each entry rises in through a mask so it
- * lands on its beat. The next entry pushes it out in lockstep, like a slot reel, so two
- * entries never overlap. An entry with an explicit `exit` leaves on its own instead.
- * entry: { t, html | parts: [html], lead?, exit?, update?(t, parts) }
- */
-function slot(parent, x, y, cls, entries, { stagger = 0.05, dur = 0.85, clip } = {}) {
-  const items = entries.map((entry, i) => {
-    const wrap = $('div', 'abs', parent);
-    box(wrap, x, y + (clip ? clip[0] : 0));
-    const mask = $('div', `mask ${cls}`, wrap);
-    if (clip) Object.assign(mask.style, { height: px(clip[1] - clip[0]), padding: '0', margin: '0' });
-    const parts = (entry.parts ?? [entry.html]).map((html) => {
-      const part = $('span', '', mask, html);
-      if (clip) Object.assign(part.style, { position: 'relative', top: px(-clip[0]) });
-      return part;
-    });
-    return { entry, wrap, parts, start: entry.t - (entry.lead ?? 0.2) };
-  });
-  const kin = (it, t, j) => ease.out(prog(t, it.start + j * stagger, dur));
-  // Glyphs overhang a line-height:1 box, so unclipped slots travel further to clear the mask.
-  const travel = clip ? 112 : 150;
-  items.forEach((it, i) => {
-    const next = items[i + 1];
-    it.kout = it.entry.exit !== undefined || !next
-      ? (t, j) => ease.inStrong(prog(t, (it.entry.exit ?? Infinity) + j * stagger * 0.5, 0.36))
-      : (t, j) => kin(next, t, Math.min(j, next.parts.length - 1));
-  });
-  return (t) => {
-    for (const it of items) {
-      const out = it.kout(t, 0);
-      const live = t >= it.start - 0.001 && it.kout(t, it.parts.length - 1) < 1;
-      shown(it.wrap, live);
-      if (!live) continue;
-      it.parts.forEach((p, j) => {
-        p.style.transform = `translateY(${(1 - kin(it, t, j)) * travel - it.kout(t, j) * travel}%)`;
-      });
-      if (out >= 0) it.entry.update?.(t, it.parts);
-    }
-  };
-}
-
-// ---------------------------------------------------------------- background
-function paintContours(canvas, seed) {
-  const pad = 140;
-  canvas.width = W + pad * 2;
-  canvas.height = H + pad * 2;
-  box(canvas, -pad, -pad);
-  const ctx = canvas.getContext('2d');
-  const rand = mulberry32(seed);
-  const G = 16;
-  const lattice = Array.from({ length: G * G }, rand);
-  const smooth = (x) => x * x * x * (x * (x * 6 - 15) + 10);
-  const at = (i, j) => lattice[(((j % G) + G) % G) * G + (((i % G) + G) % G)];
-  const noise = (u, v) => {
-    const i = Math.floor(u), j = Math.floor(v);
-    const fu = smooth(u - i), fv = smooth(v - j);
-    return lerp(lerp(at(i, j), at(i + 1, j), fu), lerp(at(i, j + 1), at(i + 1, j + 1), fu), fv);
-  };
-  const step = 6;
-  const cols = Math.ceil(canvas.width / step) + 1;
-  const rows = Math.ceil(canvas.height / step) + 1;
-  const field = new Float32Array(cols * rows);
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const x = (c * step) / 260, y = (r * step) / 260;
-      field[r * cols + c] = 0.62 * noise(x, y) + 0.28 * noise(x * 2.1 + 5.3, y * 2.1 + 1.7) + 0.1 * noise(x * 4.3 + 9.1, y * 4.3 + 3.3);
-    }
-  }
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  const levels = 22;
-  for (let l = 1; l < levels; l++) {
-    const iso = 0.12 + (l / levels) * 0.76;
-    ctx.strokeStyle = 'rgba(148,153,163,0.12)';
-    ctx.lineWidth = l % 4 === 0 ? 2.6 : 1.5;
-    ctx.beginPath();
-    for (let r = 0; r < rows - 1; r++) {
-      for (let c = 0; c < cols - 1; c++) {
-        const a = field[r * cols + c], b = field[r * cols + c + 1];
-        const d = field[(r + 1) * cols + c], e = field[(r + 1) * cols + c + 1];
-        const code = (a > iso ? 8 : 0) | (b > iso ? 4 : 0) | (e > iso ? 2 : 0) | (d > iso ? 1 : 0);
-        if (code === 0 || code === 15) continue;
-        const x = c * step, y = r * step;
-        const top = [x + step * ((iso - a) / (b - a)), y];
-        const right = [x + step, y + step * ((iso - b) / (e - b))];
-        const bottom = [x + step * ((iso - d) / (e - d)), y + step];
-        const left = [x, y + step * ((iso - a) / (d - a))];
-        const seg = (p, q) => { ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); };
-        switch (code) {
-          case 1: case 14: seg(left, bottom); break;
-          case 2: case 13: seg(bottom, right); break;
-          case 3: case 12: seg(left, right); break;
-          case 4: case 11: seg(top, right); break;
-          case 5: seg(left, top); seg(bottom, right); break;
-          case 6: case 9: seg(top, bottom); break;
-          case 7: case 8: seg(left, top); break;
-          case 10: seg(left, bottom); seg(top, right); break;
-        }
-      }
-    }
-    ctx.stroke();
-  }
-}
-
-function paintGrain(el, seed) {
-  const c = document.createElement('canvas');
-  c.width = c.height = 256;
-  const ctx = c.getContext('2d');
-  const img = ctx.createImageData(256, 256);
-  const rand = mulberry32(seed);
-  for (let i = 0; i < img.data.length; i += 4) {
-    const v = 128 + (rand() - 0.5) * 255;
-    img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
-    img.data[i + 3] = 255;
-  }
-  ctx.putImageData(img, 0, 0);
-  el.style.backgroundImage = `url(${c.toDataURL()})`;
-}
-
-// ---------------------------------------------------------------- the film
-function build(hit) {
-  const world = document.getElementById('world');
-  const painters = [];
-  const every = (fn) => painters.push(fn);
-
-  // Background: topographic contours drifting slowly, like the foot of the mountain.
-  const contours = document.getElementById('contours');
-  paintContours(contours, 1157);
-  paintGrain(document.getElementById('grain'), 77);
-  every((t) => tf(contours, 0, -t * 2.6));
+boot(({ hit, world, every }) => {
+  background(every);
 
   // ================================================================ 1. Hook: "Сүүлийн асуулт."
-  const HORIZON = 1010;
-  const horizon = $('div', 'abs', world);
-  horizon.style.background = C.gold;
-  horizon.style.height = '2px';
-  every((t) => {
-    const k = ease.out(prog(t, 0, 0.9));
-    const r = ease.inOut(prog(t, hit.options - 0.12, 0.48));
-    box(horizon, 96 + 888 * r, HORIZON, Math.max(0, 888 * (k - r)));
-  });
-
-  const THREE = 980;
-  const threeInk = ink('3', '500', THREE);
-  const threeMask = $('div', 'abs', world);
-  box(threeMask, 0, 0, W, HORIZON);
-  threeMask.style.overflow = 'hidden';
-  const three = $('div', 'abs', threeMask, '3');
-  three.style.font = `500 ${THREE}px/1 var(--display)`;
-  three.style.color = C.green;
-  box(three, 984 - threeInk.right, HORIZON - threeInk.baseline);
-  every((t) => {
-    const rise = ease.out(prog(t, -0.08, 1.1));
-    const sink = ease.in(prog(t, hit.options - 0.3, 0.36));
-    const drop = threeInk.ascent + 40;
-    three.style.transformOrigin = '50% 100%';
-    tf(three, 0, (1 - rise) * drop + sink * drop, lerp(1.06, 1, rise));
-    shown(three, sink < 1);
-  });
-
-  // Eyebrow: three progress bars (two answered, the third fills on "асуулт") and the word.
-  const eyebrow1 = $('div', 'abs', world);
-  box(eyebrow1, 96, 1054);
-  const bars = [0, 1, 2].map((i) => {
-    const track = $('div', 'abs', eyebrow1);
-    box(track, i * 62, 0, 52, 6);
-    track.style.borderRadius = '3px';
-    track.style.background = i < 2 ? 'var(--gray50)' : 'var(--gray12)';
-    const fill = $('div', 'abs', track);
-    box(fill, 0, 0, 52, 6);
-    fill.style.borderRadius = '3px';
-    fill.style.background = C.green;
-    fill.style.transformOrigin = '0 50%';
-    return { track, fill };
-  });
-  const ask = $('div', 'abs mask eyebrow', eyebrow1);
-  box(ask, 3 * 62 + 18, -10);
-  const askInner = $('span', '', ask, 'Асуулт');
-  every((t) => {
-    const mv = ease.inOut(prog(t, hit.options - 0.12, 0.5));
-    const out = ease.in(prog(t, hit['урьдчилгаа'] - 0.5, 0.32));
-    tf(eyebrow1, 0, -678 * mv - out * 40);
-    op(eyebrow1, 1 - out);
-    bars.forEach((b, i) => {
-      b.track.style.transformOrigin = '0 50%';
-      b.track.style.transform = `scaleX(${ease.out(prog(t, 0.02 + i * 0.07, 0.6))})`;
-      b.fill.style.transform = `scaleX(${i === 2 ? ease.out(prog(t, hit['асуулт'] - 0.08, 0.55)) : 0})`;
-    });
-    askInner.style.transform = `translateY(${(1 - ease.out(prog(t, 0.12, 0.8))) * 115}%)`;
-  });
-
-  // Headline. On "options" it glides up and shrinks into the header.
-  const head1 = $('div', 'abs', world);
-  box(head1, 96, 1100);
-  head1.style.transformOrigin = '0 0';
-  const h1Lines = ['Сүүлийн', 'асуулт.'].map((text, i) => {
-    const m = $('div', 'abs mask h1', head1);
-    box(m, 0, i * 158);
-    return $('span', '', m, text);
-  });
-  const h1In = [-0.12, hit['асуулт'] - 0.24];
-  every((t) => {
-    const mv = ease.inOut(prog(t, hit.options - 0.12, 0.5));
-    tf(head1, 0, -660 * mv, lerp(1, 0.56, mv));
-    let gone = true;
-    h1Lines.forEach((line, i) => {
-      const kin = ease.out(prog(t, h1In[i], 0.9));
-      const kout = ease.in(prog(t, hit['төлбөрийн'] - 0.3 + i * 0.05, 0.42));
-      line.style.transform = `translateY(${(1 - kin) * 115 - kout * 115}%)`;
-      if (kout < 1) gone = false;
-    });
-    shown(head1, !gone);
+  hook(world, every, {
+    numeral: '3',
+    current: 2,
+    lines: ['Сүүлийн', 'асуулт.'],
+    at: { ask: hit['асуулт'], glide: hit.options, leave: hit['урьдчилгаа'] - 0.5, out: hit['төлбөрийн'] - 0.3 },
   });
 
   // ================================================================ 2. Three ways to pay
@@ -475,13 +138,8 @@ function build(hit) {
   every(eyebrow);
 
   // Hero numerals sit on one baseline; labels below them carry the spoken words.
-  const HERO_BASE = 724;
-  const heroInk = ink('30%', '500', 340);
-  const heroY = HERO_BASE - heroInk.baseline;
-  const unit = (s) => `<span class="unit">${s}</span>`;
   const count18 = { value: 6 };
-  const heroClip = [heroInk.baseline - heroInk.ascent - 22, heroInk.baseline + 34];
-  const hero = slot(world, 92, heroY, 'hero', [
+  const hero = heroSlot(world, [
     { t: hit['30%'], parts: ['3', '0', '%'], lead: 0.24, exit: hit['үлдэгдэл'] - 0.24 },
     { t: hit['6 сар'], parts: ['6', unit('сар')], lead: 0.16 },
     { t: hit['хүүгүй'], parts: ['0', '%'], lead: 0.18, exit: hit['эсвэл'] - 0.12 },
@@ -496,7 +154,7 @@ function build(hit) {
     },
     { t: hit['1.6%'], parts: ['1', '.', '6', '%'], lead: 0.2, exit: hit['мөн дээрээс нь'] - 0.3 },
     { t: hit['30% бартер'], parts: ['<span class="gold">3</span>', '<span class="gold">0</span>', '<span class="gold">%</span>'], lead: 0.24, exit: Infinity },
-  ], { stagger: 0.055, dur: 0.95, clip: heroClip });
+  ]);
   every(hero);
 
   // The "+" for "Мөн дээрээс нь" (and on top of that), in gold hairline bars.
@@ -521,8 +179,6 @@ function build(hit) {
     arms.forEach((a, i) => (a.style.transform = `rotate(${i * 90}deg) scaleX(${ease.out(prog(t, hit['мөн дээрээс нь'] + 0.04 + i * 0.08, 0.7))})`));
   });
 
-  const LABEL1 = HERO_BASE + 34;
-  const LABEL2 = LABEL1 + 94;
   const label1 = slot(world, 96, LABEL1, 'label', [
     { t: hit['урьдчилгаа'] + 0.3, html: 'Урьдчилгаа', lead: 0.06 },
     { t: hit['үлдэгдэл'], html: 'үлдэгдлийн' },
@@ -560,8 +216,7 @@ function build(hit) {
     const leftInner = $('span', '', left, 'Үнийн дүн');
     const right = $('div', 'abs mask caption muted', parent);
     const rightInner = $('span', '', right, '100%');
-    measure.font = '600 34px Manrope';
-    box(right, 56 + BAR.w - measure.measureText('100%').width, 44);
+    box(right, 56 + BAR.w - textWidth('600 34px Manrope', '100%'), 44);
     return (k) => {
       leftInner.style.transform = rightInner.style.transform = `translateY(${(1 - k) * 115}%)`;
     };
@@ -603,7 +258,7 @@ function build(hit) {
   thumb.style.borderRadius = '56px';
   const optA = $('div', 'abs mask opt', control);
   const optAInner = $('span', '', optA, '6 сар · 0% хүү');
-  const optAWidth = (() => { measure.font = '700 38px Manrope'; return measure.measureText('6 сар · 0% хүү').width; })();
+  const optAWidth = textWidth('700 38px Manrope', '6 сар · 0% хүү');
   box(optA, CTRL.w / 4 - optAWidth / 2, CTRL.h / 2 - 19);
   const optB = $('div', 'abs mask opt', control);
   box(optB, CTRL.w / 2 + 90, CTRL.h / 2 - 19);
@@ -703,8 +358,7 @@ function build(hit) {
     box(tile, d.x, TILE.y, TILE.w, TILE.h);
     const label = $('div', 'abs mask tile-label', tile);
     const labelInner = $('span', '', label, d.label);
-    measure.font = '600 34px Manrope';
-    box(label, (TILE.w - measure.measureText(d.label).width) / 2, TILE.h - 56);
+    box(label, (TILE.w - textWidth('600 34px Manrope', d.label)) / 2, TILE.h - 56);
     const seal = $('div', 'abs', tile);
     box(seal, TILE.w - 64, 18, 46, 46);
     seal.style.borderRadius = '50%';
@@ -765,36 +419,4 @@ function build(hit) {
     world.style.transformOrigin = '50% 45%';
     world.style.transform = `translateY(${shrinkK(t) * 96}px) scale(${1 + 0.012 * Math.sin((t / 21) * Math.PI)})`;
   });
-
-  return (t) => {
-    for (const paint of painters) paint(t);
-  };
-}
-
-// ---------------------------------------------------------------- boot
-async function main() {
-  await loadFonts();
-  const beats = await (await fetch('beats.json')).json();
-  const hit = Object.fromEntries(beats.hits.map((h) => [h.name, h.t]));
-  const paint = build(hit);
-  window.FILM = { width: W, height: H, fps: FPS, duration: beats.duration, audio: 'out/mix.wav' };
-  window.seek = paint;
-  paint(0);
-  if (!RENDER) preview(paint, beats.duration);
-}
-
-// Browser preview only: render.mjs never runs this loop.
-function preview(paint, duration) {
-  const stage = document.getElementById('stage');
-  const fit = () => (stage.style.transform = `scale(${Math.min(innerWidth / W, innerHeight / H)})`);
-  fit();
-  addEventListener('resize', fit);
-  const t0 = performance.now();
-  const loop = (now) => {
-    paint(((now - t0) / 1000) % duration);
-    requestAnimationFrame(loop);
-  };
-  requestAnimationFrame(loop);
-}
-
-window.ready = main();
+});
