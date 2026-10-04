@@ -6,7 +6,7 @@ Motion graphic for the payment-terms answer in the reel: 9:16, 1080×1920, 60 fp
 
 The clip starts on SRT cue 24, «Сүүлийн асуулт.», at **00:00:16.710** in `Nested Sequence 01`. Drop it on the timeline at that point and every move lands on its word. The voice ends on «боломжтой.» at 37.600, which is 20.89 s into the clip. The last 0.11 s is a hold.
 
-Audio comes as a mix plus two stems in `out/`: `score.wav` (pad and mallet notes) and `sfx.wav` (whooshes, low hits, ticks). The stems sum to the mix, so you can mute or duck the score under the voice-over and keep the SFX.
+Audio comes as a mix plus two stems in `out/`: `score.wav` (mallet and bell notes on the beats) and `sfx.wav` (whooshes, low hits, ticks). The stems sum to the mix, so you can rebalance them under the voice-over.
 
 ## Build
 

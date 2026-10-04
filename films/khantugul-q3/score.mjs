@@ -1,6 +1,6 @@
 // Synthesizes the score and SFX for the film, deterministically, from beats.json.
 // Every hit sits on the same word-level grid as the picture. Output (out/):
-//   score.wav  pad + mallet notes      sfx.wav  whooshes, thumps, ticks, clicks
+//   score.wav  mallet and bell notes   sfx.wav  whooshes, thumps, ticks, clicks
 //   mix.wav    both, at -14 LUFS integrated (stems carry the same gain, so they sum to the mix)
 //
 //   node films/khantugul-q3/score.mjs
@@ -49,52 +49,6 @@ function voice(b, t0, dur, p, fn, sendLevel = 0) {
     }
   }
 }
-
-// ---------------------------------------------------------------- pad
-// Band-limited wavetables: a dark one and a bright one, crossfaded slowly so the pad breathes.
-function table(harmonics, tilt) {
-  const T = new Float32Array(4096);
-  for (let h = 1; h <= harmonics; h++) {
-    for (let i = 0; i < 4096; i++) T[i] += Math.sin((TAU * h * i) / 4096) / h ** tilt;
-  }
-  const peak = T.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
-  return T.map((v) => v / peak);
-}
-const DARK = table(4, 1.6);
-const BRIGHT = table(10, 1.15);
-const read = (T, ph) => {
-  const x = (ph - Math.floor(ph)) * 4096;
-  const i = Math.floor(x);
-  return lerp(T[i & 4095], T[(i + 1) & 4095], x - i);
-};
-
-const CHORDS = [
-  { t: 0, notes: [50, 57, 61, 64, 66] }, // Dmaj9
-  { t: hit['урьдчилгаа'], notes: [47, 54, 57, 61, 62] }, // Bm9
-  { t: hit['18 сар'], notes: [43, 50, 54, 57, 59] }, // Gmaj9
-  { t: hit['мөн дээрээс нь'], notes: [52, 59, 62, 66, 67] }, // Em9
-  { t: hit['боломжтой'], notes: [38, 50, 57, 61, 64, 66] }, // Dmaj9, home
-];
-CHORDS.forEach((chord, k) => {
-  const t0 = Math.max(0, chord.t - 0.25);
-  const t1 = CHORDS[k + 1]?.t ?? beats.duration;
-  const dur = t1 - t0 + 1.4;
-  chord.notes.forEach((m, n) => {
-    for (const [cents, p] of [[-7, -0.55], [6, 0.55]]) {
-      const f = midi(m) * 2 ** (cents / 1200);
-      let ph = (n * 0.137 + (cents > 0 ? 0.5 : 0)) % 1;
-      const level = (m < 45 ? 0.022 : 0.016) * (k === 0 ? 0.85 : 1);
-      voice(score, t0, dur, p * (0.4 + n * 0.12), (s) => {
-        ph += f / SR;
-        const t = t0 + s;
-        const fadeIn = k === 0 ? ease.inOutSoft(prog(t, 0, 0.35)) : ease.inOutSoft(prog(s, 0, 0.9));
-        const fadeOut = 1 - ease.inOutSoft(prog(t, t1 - 0.15, 1.1));
-        const breathe = 0.5 + 0.5 * Math.sin(TAU * 0.11 * t + n);
-        return level * fadeIn * fadeOut * lerp(read(DARK, ph), read(BRIGHT, ph), 0.25 + 0.35 * breathe);
-      }, 0.35);
-    }
-  });
-});
 
 // ---------------------------------------------------------------- musical hits
 const MALLET = [[1, 1, 0.9], [2, 0.3, 0.45], [3, 0.1, 0.25], [4.16, 0.05, 0.14]];
