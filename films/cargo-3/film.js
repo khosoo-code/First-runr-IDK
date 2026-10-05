@@ -24,31 +24,47 @@ boot(({ hit, stage, every }) => {
 
   // ₮270 inside a drawn price tag.
   const PRICE = 250;
-  const signW = textWidth(`900 ${PRICE}px Montserrat`, '₮');
+  const signW = textWidth(`900 ${PRICE}px Montserrat`, 'T');
   const numW = textWidth(`900 ${PRICE}px Montserrat`, '270');
-  const priceW = signW + numW;
+  const GAP = 14;
+  const priceW = signW + GAP + numW;
   const PX = (W - priceW) / 2 + 15;
   const PY = 860;
   const price = $('div', 'abs shade', stage);
   box(price, PX, PY);
   price.style.transformOrigin = `${-90}px ${PRICE / 2}px`;
-  const sign = $('div', 'abs word solid', price, '₮');
-  sign.style.fontSize = `${PRICE}px`;
-  sign.style.transformOrigin = '50% 60%';
+  // ₮ built from a T and two slash bars: Montserrat's ₮ has overlapping contours that show
+  // through a heavy stroke, so every white outline is painted first and all the green on top.
+  const sign = $('div', 'abs', price);
+  Object.assign(sign.style, { width: `${signW}px`, height: `${PRICE}px`, transformOrigin: '50% 60%' });
+  const bars = (fill, stroke) => {
+    const g = svg('svg', { width: signW, height: PRICE, style: 'position:absolute;left:0;top:0;overflow:visible' }, sign);
+    [0.5, 0.67].forEach((y) => svg('rect', {
+      x: signW / 2 - PRICE * 0.24, y: PRICE * (y - 0.04), width: PRICE * 0.48, height: PRICE * 0.08,
+      fill, stroke, 'stroke-width': stroke ? 22 : 0, 'stroke-linejoin': 'round',
+      transform: `rotate(-22 ${signW / 2} ${PRICE * y})`,
+    }, g));
+  };
+  const back = $('div', 'abs word solid', sign, 'T');
+  Object.assign(back.style, { fontSize: `${PRICE}px`, color: '#ffffff' });
+  bars('#ffffff', '#ffffff');
+  const front = $('div', 'abs word', sign, 'T');
+  Object.assign(front.style, { fontSize: `${PRICE}px`, color: 'var(--green)' });
+  bars('var(--green)', null);
   const num = $('div', 'abs word solid', price, '0');
   Object.assign(num.style, { fontSize: `${PRICE}px`, fontVariantNumeric: 'tabular-nums' });
-  box(num, signW, 0);
+  box(num, signW + GAP, 0);
 
   const T = { l: PX - 70, r: PX + priceW + 80, t: PY - 40, b: PY + PRICE + 30 };
   const midY = (T.t + T.b) / 2;
-  const tag = drawPath(layer, `M${T.l - 70} ${midY} L${T.l} ${T.t} H${T.r - 30} Q${T.r} ${T.t} ${T.r} ${T.t + 30} V${T.b - 30} Q${T.r} ${T.b} ${T.r - 30} ${T.b} H${T.l} Z`, { width: 8 });
-  const hole = svg('circle', { cx: T.l - 22, cy: midY, r: 0, stroke: '#ffffff', 'stroke-width': 7 }, layer);
-  const string = drawPath(layer, `M${T.l - 22} ${midY} C${T.l - 70} ${midY - 90} ${T.l - 90} ${T.t - 40} ${T.l - 30} ${T.t - 78}`, { width: 6 });
+  const tag = drawPath(layer, `M${T.l - 70} ${midY} L${T.l} ${T.t} H${T.r - 30} Q${T.r} ${T.t} ${T.r} ${T.t + 30} V${T.b - 30} Q${T.r} ${T.b} ${T.r - 30} ${T.b} H${T.l} Z`, { width: 14 });
+  const hole = svg('circle', { cx: T.l - 22, cy: midY, r: 0, stroke: '#ffffff', 'stroke-width': 11 }, layer);
+  const string = drawPath(layer, `M${T.l - 22} ${midY} C${T.l - 70} ${midY - 90} ${T.l - 90} ${T.t - 40} ${T.l - 30} ${T.t - 78}`, { width: 10 });
 
   every((t) => {
     letters.forEach((l, i) => {
       const k = ease.out(prog(t, hit['100гр тутамд'] - 0.3 + i * 0.03, 0.5));
-      l.style.transform = `translateY(${(1 - k) * 110}%)`;
+      l.style.transform = `translateY(${(1 - k) * 140}%)`;
     });
     const lift = ease.inStrong(prog(t, OUT - 0.02, 0.34));
     unit.style.transform = `translateY(${-lift * 260}px)`;

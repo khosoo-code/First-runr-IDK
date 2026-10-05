@@ -27,13 +27,13 @@ boot(({ hit, beats, stage, every }) => {
   const transport = line('тээвэр', 'white', 112, 1236);
 
   // Speed lines trailing ХУРДАН.
-  const speed = [0.22, 0.5, 0.78].map((f) => drawPath(lines, `M-20 ${650 + f * 176} H${fast.x - 34}`, { width: 7 }));
+  const speed = [0.22, 0.5, 0.78].map((f) => drawPath(lines, `M-20 ${650 + f * 176} H${fast.x - 34}`, { width: 12 }));
   // The frame that locks НАЙДВАРТАЙ in place.
   const PAD = 30;
   const fr = { x: reliable.x - PAD, y: reliable.y - 22, w: reliable.w + PAD * 2, h: reliable.size + 44 };
-  const frame = drawPath(lines, `M${fr.x + 20} ${fr.y} H${fr.x + fr.w - 20} Q${fr.x + fr.w} ${fr.y} ${fr.x + fr.w} ${fr.y + 20} V${fr.y + fr.h - 20} Q${fr.x + fr.w} ${fr.y + fr.h} ${fr.x + fr.w - 20} ${fr.y + fr.h} H${fr.x + 20} Q${fr.x} ${fr.y + fr.h} ${fr.x} ${fr.y + fr.h - 20} V${fr.y + 20} Q${fr.x} ${fr.y} ${fr.x + 20} ${fr.y}`, { width: 6 });
+  const frame = drawPath(lines, `M${fr.x + 20} ${fr.y} H${fr.x + fr.w - 20} Q${fr.x + fr.w} ${fr.y} ${fr.x + fr.w} ${fr.y + 20} V${fr.y + fr.h - 20} Q${fr.x + fr.w} ${fr.y + fr.h} ${fr.x + fr.w - 20} ${fr.y + fr.h} H${fr.x + 20} Q${fr.x} ${fr.y + fr.h} ${fr.x} ${fr.y + fr.h - 20} V${fr.y + 20} Q${fr.x} ${fr.y} ${fr.x + 20} ${fr.y}`, { width: 12 });
   // The underline ТЭЭВЭР lands on.
-  const under = drawPath(lines, `M${transport.x} ${transport.y + transport.size + 26} H${transport.x + transport.w}`, { width: 9 });
+  const under = drawPath(lines, `M${transport.x} ${transport.y + transport.size + 26} H${transport.x + transport.w}`, { width: 15 });
 
   const out = (t, i) => ease.inStrong(prog(t, OUT - 0.05 + i * 0.04, 0.34));
   every((t) => {
@@ -50,7 +50,7 @@ boot(({ hit, beats, stage, every }) => {
 
     // НАЙДВАРТАЙ: drops in and locks, then its frame draws around it.
     const drop = spring(t - (hit['найдвартай'] - 0.2), { freq: 2.4, damping: 0.58 });
-    reliable.el.style.transform = `translateY(${(1 - drop) * -115}%)`;
+    reliable.el.style.transform = `translateY(${(1 - drop) * -140}%)`;
     reliable.wrap.style.transform = `translateX(${out(t, 1) * 1250}px)`;
     shown(reliable.wrap, drop > 0.001);
     frame.draw(ease.inOut(prog(t, hit.frame - 0.22, 0.5)));
@@ -63,7 +63,7 @@ boot(({ hit, beats, stage, every }) => {
     cheap.wrap.style.transform = `translateX(${out(t, 2) * 1250}px)`;
     shown(cheap.wrap, pop > 0.001);
     const rise = ease.out(prog(t, hit['тээвэр'] - 0.2, 0.6));
-    transport.el.style.transform = `translateY(${(1 - rise) * 110}%)`;
+    transport.el.style.transform = `translateY(${(1 - rise) * 140}%)`;
     transport.wrap.style.transform = `translateX(${out(t, 3) * 1250}px)`;
     under.draw(ease.inOut(prog(t, hit['тээвэр'] - 0.02, 0.45)));
     under.style.transform = `translateX(${out(t, 3) * 1250}px)`;

@@ -45,9 +45,9 @@ boot(({ hit, stage, every }) => {
   // The route: a dashed white line out to a pin.
   const RY = 1330;
   const x1 = X0 + colW + GAP + wordW - 40;
-  const route = drawPath(layer, `M${X0 + 10} ${RY} C${X0 + 220} ${RY - 70} ${x1 - 320} ${RY + 80} ${x1} ${RY}`, { width: 8, dash: '22 22' });
+  const route = drawPath(layer, `M${X0 + 10} ${RY} C${X0 + 220} ${RY - 70} ${x1 - 320} ${RY + 80} ${x1} ${RY}`, { width: 14, dash: '26 22' });
   const pin = svg('g', {}, layer);
-  svg('circle', { cx: 0, cy: 0, r: 22, stroke: '#ffffff', 'stroke-width': 8 }, pin);
+  svg('circle', { cx: 0, cy: 0, r: 24, stroke: '#ffffff', 'stroke-width': 13 }, pin);
   svg('circle', { cx: 0, cy: 0, r: 7, fill: '#ffffff' }, pin);
 
   const out = (t, i) => ease.inStrong(prog(t, OUT - 0.05 + i * 0.04, 0.34));
@@ -55,7 +55,7 @@ boot(({ hit, stage, every }) => {
     rows.forEach((r, i) => {
       const [tn, tw] = r.at;
       const rise = ease.out(prog(t, tn - 0.3, 0.55));
-      r.num.style.transform = `translateY(${(1 - rise) * 110}%)`;
+      r.num.style.transform = `translateY(${(1 - rise) * 140}%)`;
       r.num.textContent = String(Math.round(lerp(0, r.value, ease.outSoft(prog(t, tn - 0.24, 0.62)))));
       const slide = ease.out(prog(t, tw - 0.2, 0.55));
       r.w.style.transform = `translateX(${(slide - 1) * 105}%)`;
@@ -63,7 +63,7 @@ boot(({ hit, stage, every }) => {
     });
     letters.forEach((l, i) => {
       const k = ease.out(prog(t, hit['хүргэнэ'] - 0.28 + i * 0.035, 0.5));
-      l.style.transform = `translateY(${(1 - k) * 110}%)`;
+      l.style.transform = `translateY(${(1 - k) * 140}%)`;
     });
     deliver.style.transform = `translateX(${-out(t, 2) * 1250}px)`;
     route.draw(ease.inOut(prog(t, hit.route - 0.36, 0.6)), ease.in(prog(t, OUT + 0.02, 0.3)));
