@@ -1,0 +1,14 @@
+/* Cargo kinetic type: Montserrat, brand green #008c00, white strokes, transparent background. */
+:root { --green: #008c00; --white: #ffffff; --ui: 'Montserrat', sans-serif; }
+html, body { margin: 0; background: transparent; }
+#stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; font-family: var(--ui); transform-origin: 0 0; }
+.abs { position: absolute; left: 0; top: 0; }
+.mask { overflow: hidden; padding: 0.12em 0.06em 0.14em; margin: -0.12em -0.06em -0.14em; white-space: nowrap; }
+.mask > * { display: inline-block; }
+.word { font-weight: 900; text-transform: uppercase; line-height: 1; white-space: nowrap; letter-spacing: -0.01em; }
+/* Solid green with a white stroke painted under the fill, so the stroke sits outside the letters. */
+.solid { color: var(--green); -webkit-text-stroke: 10px var(--white); paint-order: stroke fill; }
+/* Hollow: white outline only. */
+.hollow { color: transparent; -webkit-text-stroke: 4px var(--white); }
+.white { color: var(--white); }
+.shade { filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.28)); }

@@ -2,6 +2,8 @@
 // Renders an HTML film that follows the render contract in CLAUDE.md.
 // The film's index.html sets window.FILM = { width, height, fps, duration, audio? } and
 // window.seek(t), which paints frame t. window.ready (optional promise) gates the first frame.
+// With FILM.alpha the page background stays transparent and the film encodes to ProRes 4444
+// with an alpha channel (.mov) instead of H.264, for overlays.
 //
 //   node render.mjs <film-dir>                    full render -> <film-dir>/out/<name>.mp4
 //   node render.mjs <film-dir> --sheet            one frame per hit in beats.json -> out/sheet.png
@@ -66,7 +68,7 @@ const fps = Number(opt('fps', film.fps));
 async function frameAt(t) {
   await page.evaluate((s) => window.seek(s), t);
   if (pageErrors.length) throw new Error(`page error: ${pageErrors.join('; ')}`);
-  return page.screenshot({ type: 'png' });
+  return page.screenshot({ type: 'png', omitBackground: Boolean(film.alpha) });
 }
 
 async function contactSheet(samples, file) {
@@ -99,12 +101,13 @@ async function renderVideo(file) {
     '-y', '-v', 'error',
     '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', '-',
     ...(audio ? ['-ss', String(from), '-t', String(to - from), '-i', audio] : []),
-    '-map', '0:v', ...(audio ? ['-map', '1:a', '-c:a', 'aac', '-b:a', '320k', '-ar', '48000'] : []),
+    '-map', '0:v', ...(audio ? ['-map', '1:a', ...(film.alpha ? ['-c:a', 'pcm_s24le'] : ['-c:a', 'aac', '-b:a', '320k']), '-ar', '48000'] : []),
     // Chromium paints sRGB; convert with the BT.709 matrix and tag it so players don't shift the colors.
-    '-vf', 'scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p',
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-profile:v', 'high',
+    ...(film.alpha
+      ? ['-vf', 'scale=out_color_matrix=bt709:flags=accurate_rnd+full_chroma_int,format=yuva444p10le', '-c:v', 'prores_ks', '-profile:v', '4444', '-alpha_bits', '16', '-vendor', 'apl0']
+      : ['-vf', 'scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p', '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-profile:v', 'high']),
     '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
-    '-movflags', '+faststart', file,
+    ...(film.alpha ? [] : ['-movflags', '+faststart']), file,
   ], { stdio: ['pipe', 'inherit', 'inherit'] });
   const done = new Promise((resolve, reject) => ff.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg exited ${code}`)))));
 
@@ -132,7 +135,7 @@ try {
     }
     await contactSheet(samples, path.resolve(opt('out', path.join(outDir, 'sheet.png'))));
   } else {
-    await renderVideo(path.resolve(opt('out', path.join(outDir, `${name}.mp4`))));
+    await renderVideo(path.resolve(opt('out', path.join(outDir, `${name}.${film.alpha ? 'mov' : 'mp4'}`))));
   }
 } finally {
   await browser.close();
