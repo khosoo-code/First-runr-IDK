@@ -6,13 +6,14 @@
 // with an alpha channel (.mov) instead of H.264, for overlays.
 //
 //   node render.mjs <film-dir>                    full render -> <film-dir>/out/<name>.mp4
+//   node render.mjs <film-dir> --png              lossless RGBA frames -> out/<name>_png/<name>_0000.png
 //   node render.mjs <film-dir> --sheet            one frame per hit in beats.json -> out/sheet.png
 //   node render.mjs <film-dir> --times 1,2.5,4    those frames as a contact sheet -> out/sheet.png
 //
 // Options: --fps N  --from S --to S (range)  --offset S (sheet sample offset after each hit)
 //          --cols N --thumb PX (sheet layout)  --out PATH
 import { spawn } from 'node:child_process';
-import { createReadStream, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+import { copyFileSync, createReadStream, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -96,6 +97,21 @@ async function renderVideo(file) {
   const last = Math.round(to * fps); // exclusive
   const audio = film.audio && existsSync(path.join(filmDir, film.audio)) ? path.join(filmDir, film.audio) : null;
   if (film.audio && !audio) console.warn(`warning: ${film.audio} not found, rendering without audio`);
+
+  if (flag('png')) {
+    // An image sequence straight from the browser (alpha intact), with the mix copied beside it.
+    const name = path.basename(filmDir);
+    const dir = path.resolve(opt('out', path.join(outDir, `${name}_png`)));
+    rmSync(dir, { recursive: true, force: true });
+    mkdirSync(dir, { recursive: true });
+    for (let i = first; i < last; i++) {
+      writeFileSync(path.join(dir, `${name}_${String(i - first).padStart(4, '0')}.png`), await frameAt(i / fps));
+      if ((i - first) % fps === 0) process.stderr.write(`\rframe ${i - first + 1}/${last - first}`);
+    }
+    if (audio) copyFileSync(audio, path.join(dir, `${name}.wav`));
+    console.log(`\rwrote ${last - first} PNG frames at ${fps}fps -> ${path.relative(process.cwd(), dir)}${audio ? ' (+ wav)' : ''}`);
+    return;
+  }
 
   const ff = spawn('ffmpeg', [
     '-y', '-v', 'error',
