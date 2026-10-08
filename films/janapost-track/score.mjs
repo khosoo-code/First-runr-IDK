@@ -19,13 +19,15 @@ thump(0.34, 0.4);
 for (let i = 0; i < 3; i++) tick(H['захиалгуудаа'] - 0.1 + i * 0.1, 0.07, -0.3 + i * 0.3, 2900);
 pop(H['апп'] - 0.02, 0.14, -0.3);
 whoosh(H['дээрээсээ'] + 0.05, { pre: 0.18, post: 0.2, from: 900, to: 3600, gain: 0.16, panFrom: -0.2, panTo: 0.4 });
-whoosh(H['хаана'] - 0.06, { pre: 0.25, post: 0.3, from: 1400, to: 300, gain: 0.3, panFrom: 0.3, panTo: 0 });
-pop(H['хаана'] + 0.1, 0.1, -0.4);
-pop(H['хаана'] + 0.62, 0.1, 0.4);
-pop(H['явааг'] + 0.02, 0.16, 0);
-pop(H['явааг'] + 0.12, 0.1, 0.2);
-whoosh(H['хянаад'] + 0.35, { pre: 0.4, post: 0.35, from: 500, to: 2400, gain: 0.26, panFrom: -0.4, panTo: 0.3 });
-click(H['хянаад'] + 0.76, 0.13);
+// Tracking: the highlight lands on «хаана» with its bubble, steps down a status on «явааг»
+// and «хянаад» (each passed status checks off), and the parcel chip pops on «Замд яваа».
+whoosh(H['хаана'] - 0.04, { pre: 0.2, post: 0.25, from: 1200, to: 3600, gain: 0.2, panFrom: -0.5, panTo: 0 });
+pop(H['хаана'] + 0.06, 0.13, -0.5);
+for (const name of ['явааг', 'хянаад']) {
+  tick(H[name] - 0.02, 0.08, 0.1, 3000);
+  pop(H[name] + 0.08, 0.12, 0.4);
+}
+pop(H['хянаад'] + 0.16, 0.15, 0.3);
 // Waiting: a clock ticking under «хүлээж байсан».
 for (let i = 0; i < 6; i++) tick(H['хүлээж'] + 0.05 + i * 0.25, i % 2 ? 0.05 : 0.07, i % 2 ? 0.25 : -0.25, i % 2 ? 2300 : 2700);
 whoosh(H['бусдыг'] + 0.25, { pre: 0.35, post: 0.4, from: 300, to: 1200, q: 0.5, gain: 0.22, panFrom: 0, panTo: 0 });

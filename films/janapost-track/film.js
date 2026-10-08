@@ -100,6 +100,21 @@ const ICON = {
   house: ['M12 48 L50 18 L88 48', 'M22 40 V86 H78 V40', 'M42 86 V62 H58 V86'],
   store: ['M12 40 L20 16 H80 L88 40', 'M12 40 Q12 50 22 50 Q32 50 32 40 Q32 50 42 50 Q52 50 50 40 Q50 50 60 50 Q70 50 68 40 Q68 50 78 50 Q88 50 88 40', 'M20 52 V86 H80 V52', 'M40 86 V64 H60 V86'],
   check: ['M27 52 L43 68 L74 36'],
+  // The Jana Post app's «Захиалгууд» screen.
+  clock: ['M50 14 A36 36 0 1 1 49.9 14', 'M50 30 V50 L64 59'],
+  globe: ['M50 14 A36 36 0 1 1 49.9 14', 'M14 50 H86', 'M50 14 C30 32 30 68 50 86', 'M50 14 C70 32 70 68 50 86'],
+  cube: ['M50 12 L84 30 V70 L50 88 L16 70 V30 Z', 'M16 30 L50 48 L84 30', 'M50 48 V88'],
+  truck: ['M8 28 H58 V70 H8 Z', 'M58 42 H76 L90 56 V70 H58', 'M26 74 m-9 0 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0', 'M72 74 m-9 0 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0'],
+  courier: ['M34 30 m-12 0 a12 12 0 1 0 24 0 a12 12 0 1 0 -24 0', 'M12 86 V72 Q12 54 34 54 Q48 54 54 62', 'M60 56 H88 V86 H60 Z', 'M74 56 V66'],
+  received: ['M16 30 L50 14 L84 30 V70 L50 86 L16 70 Z', 'M35 50 L46 61 L66 40'],
+  search: ['M44 44 m-27 0 a27 27 0 1 0 54 0 a27 27 0 1 0 -54 0', 'M64 64 L86 86'],
+  wallet: ['M14 32 H80 Q86 32 86 38 V76 Q86 82 80 82 H20 Q14 82 14 76 Z', 'M62 50 H86 V64 H62 Q55 64 55 57 Q55 50 62 50 Z', 'M20 32 L64 16 L70 32'],
+  chevron: ['M38 22 L66 50 L38 78'],
+  chat: ['M14 22 H86 V68 H44 L28 82 V68 H14 Z', 'M32 45 H68'],
+  person: ['M50 34 m-16 0 a16 16 0 1 0 32 0 a16 16 0 1 0 -32 0', 'M18 86 Q18 58 50 58 Q82 58 82 86'],
+  home: ['M12 48 L50 16 L88 48', 'M24 40 V86 H76 V40'],
+  scan: ['M18 38 V18 H38', 'M62 18 H82 V38', 'M82 62 V82 H62', 'M38 82 H18 V62', 'M16 50 H84'],
+  wifi: ['M12 42 Q50 8 88 42', 'M26 56 Q50 34 74 56', 'M40 70 Q50 62 60 70'],
 };
 function lineIcon(parent, name, size, color, width) {
   const el = svg('svg', { viewBox: '0 0 100 100', width: size, height: size, fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, parent);
@@ -155,14 +170,14 @@ boot(({ hit, stage, every }) => {
   every((t) => tf(dots1, 0, -t * 5));
 
   // Headline: «Захиалгаа / апп дээрээсээ / хянаад л → хүлээсэн.», then «Бусдыг нь».
-  const L1 = slot(s1, 96, 236, 'h1', [
+  const L1 = slot(s1, 96, 196, 'h1', [
     { t: 0.14, html: 'Захиалгаа', lead: 0.34 },
     { t: hit['бусдыг'], html: 'Бусдыг нь…' },
   ]);
-  const L2 = slot(s1, 96, 362, 'h1', [
+  const L2 = slot(s1, 96, 318, 'h1', [
     { t: hit['апп'], parts: ['<span class="green">апп</span>', '&nbsp;дээрээсээ'], lead: 0.2, exit: hit['бусдыг'] - 0.42 },
   ], { stagger: hit['дээрээсээ'] - hit['апп'] });
-  const L3 = slot(s1, 96, 488, 'h1', [
+  const L3 = slot(s1, 96, 440, 'h1', [
     { t: hit['хянаад'], html: 'хянаад л', lead: 0.2 },
     { t: hit['хүлээж'], html: 'хүлээсэн.', lead: 0.16, exit: hit['бусдыг'] - 0.36 },
   ]);
@@ -170,164 +185,196 @@ boot(({ hit, stage, every }) => {
   every(L2);
   every(L3);
 
-  // The phone rises from below the frame; its lower half stays off-screen.
-  const PH = { x: 160, y: 690, w: 760, h: 1500, bez: 18 };
+  // The phone rises from below the frame, whole: the app's «Захиалгууд» screen.
+  const PH = { x: 220, y: 600, w: 640, h: 1312, bez: 16 };
   const SW = PH.w - 2 * PH.bez;
+  const SH = PH.h - 2 * PH.bez;
   const phone = $('div', 'abs phone', s1);
   box(phone, PH.x, PH.y, PH.w, PH.h);
-  const screen = $('div', 'abs screen', phone);
-  box(screen, PH.bez, PH.bez, SW, PH.h - 2 * PH.bez);
-  const island = $('div', 'abs island', screen);
-  box(island, (SW - 176) / 2, 24, 176, 48);
+  const screen = $('div', 'abs screen app', phone);
+  box(screen, PH.bez, PH.bez, SW, SH);
 
-  const appLogoWrap = $('div', 'abs', screen);
-  box(appLogoWrap, 40, 104);
-  appLogoWrap.style.transformOrigin = '0 50%';
-  makeLogo(appLogoWrap, 150, C.green);
-  const appTitle = maskText(screen, 40, 214, 'app-title', 'Миний захиалга');
+  // Status bar and header.
+  box($('div', 'abs island', screen), (SW - 156) / 2, 20, 156, 44);
+  box($('div', 'abs sb-time', screen, '18:09'), 54, 30);
+  const wifi = lineIcon($('div', 'abs', screen), 'wifi', 34, C.ink, 9);
+  box(wifi.el.parentNode, SW - 140, 26);
+  drawIcon(wifi, 1);
+  const batt = $('div', 'abs sb-batt', screen, '77');
+  box(batt, SW - 96, 30, 46, 26);
+  const title = maskText(screen, (SW - textWidth('700 32px Manrope', 'Захиалгууд')) / 2, 112, 'app-head', 'Захиалгууд');
+  const searchWrap = $('div', 'abs', screen);
+  box(searchWrap, SW - 76, 106);
+  const search = lineIcon(searchWrap, 'search', 42, C.ink, 8);
 
-  const ROW = { x: 36, y: 300, w: SW - 72, h: 132, gap: 18 };
-  const rowDefs = [
-    { icon: 'shoe', name: 'Poizon · Гутал', sub: 'JP 2048 1173', status: 'Замд' },
-    { icon: 'shirt', name: 'Pinduoduo · Хувцас', sub: 'JP 2048 1190', status: 'Замд' },
-    { icon: 'lamp', name: 'Taobao · Гэр ахуй', sub: 'JP 2048 1206', status: 'Агуулахад' },
+  // Wallet card.
+  const WAL = { x: 24, y: 186, w: SW - 48, h: 112 };
+  const wallet = $('div', 'abs wallet', screen);
+  box(wallet, WAL.x, WAL.y, WAL.w, WAL.h);
+  const wIcon = $('div', 'abs wallet-icon', wallet);
+  box(wIcon, 22, 28, 56, 56);
+  const wIc = lineIcon(wIcon, 'wallet', 38, '#fff', 8);
+  box($('div', 'abs wallet-name', wallet, 'Миний хэтэвч'), 96, 28);
+  box($('div', 'abs wallet-sum', wallet, '0.0 $'), 96, 64);
+  const topW = Math.ceil(textWidth('600 24px Manrope', 'Цэнэглэх')) + 56;
+  const topUp = $('div', 'abs wallet-btn', wallet, 'Цэнэглэх');
+  box(topUp, WAL.w - 62 - topW, 30, topW, 52);
+  const wChevWrap = $('div', 'abs', wallet);
+  box(wChevWrap, WAL.w - 50, 38);
+  drawIcon(lineIcon(wChevWrap, 'chevron', 36, '#fff', 11), 1);
+
+  // The status list.
+  const LIST = { x: 24, y: 322, w: SW - 48, pad: 8, row: 72 };
+  const STATUSES = [
+    ['clock', 'Хүлээгдэж байна'],
+    ['warehouse', 'Агуулахад байна'],
+    ['globe', 'Замд яваа'],
+    ['cube', 'Ялгаж байна'],
+    ['truck', 'Хүргэгдэж байна'],
+    ['store', 'Салбарт ирсэн'],
+    ['courier', 'Курьерт шилжсэн'],
+    ['received', 'Хүлээн авсан'],
   ];
-  const rows = rowDefs.map((d, i) => {
-    const el = $('div', 'abs row', screen);
-    box(el, ROW.x, ROW.y + i * (ROW.h + ROW.gap), ROW.w, ROW.h);
-    const sq = $('div', 'abs icon-sq', el);
-    box(sq, 22, 22, 88, 88);
-    const icon = lineIcon(sq, d.icon, 62, C.green, 6);
-    $('div', 'abs row-name', el, d.name).style.cssText += `left:134px;top:34px`;
-    $('div', 'abs row-sub', el, d.sub).style.cssText += `left:134px;top:80px`;
-    const pw = Math.ceil(textWidth('700 25px Manrope', d.status)) + 40;
-    const pill = $('div', 'abs status', el, d.status);
-    box(pill, ROW.w - 24 - pw, (ROW.h - 46) / 2, pw, 46);
-    return { el, icon };
+  LIST.h = LIST.pad * 2 + STATUSES.length * LIST.row;
+  const list = $('div', 'abs app-card', screen);
+  box(list, LIST.x, LIST.y, LIST.w, LIST.h);
+  // Tracking highlight: steps down the statuses to «Замд яваа».
+  const band = $('div', 'abs track-band', list);
+  const rows = STATUSES.map(([icon, label], i) => {
+    const y = LIST.pad + i * LIST.row;
+    const row = $('div', 'abs', list);
+    box(row, 0, y, LIST.w, LIST.row);
+    const iw = $('div', 'abs', row);
+    box(iw, 24, 16);
+    const ic = lineIcon(iw, icon, 40, C.green, 7);
+    const text = $('div', 'abs row-label', row, label);
+    box(text, 84, 0);
+    const chevWrap = $('div', 'abs', row);
+    box(chevWrap, LIST.w - 52, 21);
+    const chev = lineIcon(chevWrap, 'chevron', 30, '#b9bdc3', 10);
+    const done = $('div', 'abs row-check', row);
+    box(done, LIST.w - 60, 16, 40, 40);
+    const doneIc = lineIcon(done, 'check', 40, '#fff', 13);
+    return { row, ic, text, chev, chevWrap, done, doneIc, y };
   });
+  // The parcel chip on «Замд яваа»: where the brand green floods from.
+  const parcelDot = $('div', 'abs parcel-chip', list);
+  box(parcelDot, LIST.w - 64, rows[2].y + 12, 48, 48);
+  drawIcon(lineIcon(parcelDot, 'cube', 30, '#fff', 9), 1);
+  const ripple = $('div', 'abs chip-ripple', list);
+  box(ripple, LIST.w - 64, rows[2].y + 12, 48, 48);
+  const waitDots = [0, 1, 2].map(() => $('div', 'abs wait-dot', list));
 
-  // Tracking map: opens under the first order on «хаана».
-  const MAP = { x: ROW.x, y: ROW.y + ROW.h + ROW.gap, w: ROW.w, h: 520 };
-  const map = $('div', 'abs map', screen);
-  box(map, MAP.x, MAP.y, MAP.w, MAP.h);
-  const mapSvg = svg('svg', { width: MAP.w, height: MAP.h, viewBox: `0 0 ${MAP.w} ${MAP.h}`, fill: 'none' }, map);
-  mapSvg.style.position = 'absolute';
-  for (const d of ['M-10 130 L700 70', 'M-10 318 L700 392', 'M176 -10 L236 540', 'M470 -10 L418 540', 'M-10 220 Q200 260 330 200 T700 236']) {
-    svg('path', { d, stroke: '#ffffff', 'stroke-width': 12, 'stroke-linecap': 'round' }, mapSvg);
-  }
-  const ROUTE1 = 'M84 110 C250 40 330 270 460 250 S590 300 572 352';
-  const routeBase = svg('path', { d: ROUTE1, stroke: 'rgba(27,137,24,0.28)', 'stroke-width': 9, 'stroke-linecap': 'round', pathLength: 1, 'stroke-dasharray': '1 1' }, mapSvg);
-  const routeTrail = svg('path', { d: ROUTE1, stroke: C.green, 'stroke-width': 9, 'stroke-linecap': 'round', pathLength: 1, 'stroke-dasharray': '0 1' }, mapSvg);
-  const route1Len = routeTrail.getTotalLength();
-  const startDot = svg('circle', { cx: 84, cy: 110, r: 13, fill: C.green }, mapSvg);
-  const endPin = svg('g', {}, mapSvg);
-  svg('path', { d: 'M0 0 C-6 -10 -20 -18 -20 -32 A20 20 0 1 1 20 -32 C20 -18 6 -10 0 0 Z', fill: C.ink }, endPin);
-  svg('circle', { cx: 0, cy: -32, r: 7.5, fill: '#fff' }, endPin);
-  const ripple = svg('circle', { r: 20, stroke: C.green, 'stroke-width': 4, fill: 'none' }, mapSvg);
-  const parcelDot = svg('g', {}, mapSvg);
-  svg('circle', { r: 24, fill: '#fff' }, parcelDot);
-  svg('circle', { r: 15, fill: C.green }, parcelDot);
-  const lblChina = maskText(map, 48, 150, 'map-label', 'Хятад');
-  const lblUB = maskText(map, 508, 384, 'map-label', 'Улаанбаатар');
-  const bubble = $('div', 'abs bubble', map, 'Хаана явна?');
+  // «Эзэнгүй бараа хайх».
+  const lost = $('div', 'abs app-card', screen);
+  box(lost, LIST.x, LIST.y + LIST.h + 20, LIST.w, 76);
+  const lostIw = $('div', 'abs', lost);
+  box(lostIw, 24, 18);
+  const lostIc = lineIcon(lostIw, 'cube', 40, C.green, 7);
+  box($('div', 'abs row-label', lost, 'Эзэнгүй бараа хайх'), 84, 2);
+  const lostChev = $('div', 'abs', lost);
+  box(lostChev, LIST.w - 52, 23);
+  drawIcon(lineIcon(lostChev, 'chevron', 30, '#b9bdc3', 10), 1);
 
-  // Status steps along the bottom of the map.
-  const STEP_Y = 456;
-  const stepXs = [70, MAP.w / 2, MAP.w - 70];
-  const stepLine = svg('path', { d: `M${stepXs[0]} ${STEP_Y} H${stepXs[2]}`, stroke: '#cfdccd', 'stroke-width': 6, 'stroke-linecap': 'round' }, mapSvg);
-  const stepFill = svg('path', { d: `M${stepXs[0]} ${STEP_Y} H${stepXs[2]}`, stroke: C.green, 'stroke-width': 6, 'stroke-linecap': 'round', pathLength: 1, 'stroke-dasharray': '0 1' }, mapSvg);
-  const steps = stepXs.map((x) => {
-    const g = svg('g', { transform: `translate(${x} ${STEP_Y})` }, mapSvg);
-    const ring = svg('circle', { r: 15, fill: '#fff', stroke: '#cfdccd', 'stroke-width': 6 }, g);
-    return { g, ring };
+  // Tab bar with the «Захиалгууд» tab and the green scan button.
+  const TAB = { y: SH - 150, h: 150 };
+  const tabBar = $('div', 'abs tabbar', screen);
+  box(tabBar, 0, TAB.y, SW, TAB.h);
+  const tabs = [['home', 'Үндсэн', 0.1], ['cube', 'Захиалгууд', 0.29], ['chat', 'Зурвас', 0.71], ['person', 'Профайл', 0.9]].map(([icon, label, fx]) => {
+    const cx = SW * fx;
+    const iw = $('div', 'abs', tabBar);
+    box(iw, cx - 20, 22);
+    const ic = lineIcon(iw, icon, 40, '#9aa0a6', 7);
+    drawIcon(ic, 1);
+    const lw = textWidth('600 19px Manrope', label);
+    const lb = $('div', 'abs tab-label', tabBar, label);
+    box(lb, cx - lw / 2, 72);
+    return { iw, ic, lb };
   });
-  const stepLabels = ['Агуулах', 'Замд', 'Салбар'].map((s, i) => {
-    const w = textWidth('700 25px Manrope', s);
-    return maskText(map, stepXs[i] - w / 2, STEP_Y - 64, 'step-label', s);
-  });
-  const waitDots = [0, 1, 2].map(() => svg('circle', { r: 4.5, fill: C.green }, mapSvg));
+  const scanBtn = $('div', 'abs scan-btn', screen);
+  box(scanBtn, SW / 2 - 48, TAB.y - 38, 96, 96);
+  drawIcon(lineIcon(scanBtn, 'scan', 48, '#fff', 8), 1);
+  box($('div', 'abs home-bar', screen), (SW - 180) / 2, SH - 22, 180, 8);
 
-  const parcelU = (t) =>
-    lerp(0.16, 0.54, ease.inOut(prog(t, hit['хянаад'] - 0.1, 0.95))) + 0.035 * ease.outSoft(prog(t, hit['хүлээж'], 1.6));
+  // «Хаана явна?» sits outside the phone, pointing at the highlighted row from the left.
+  const bubble = $('div', 'abs bubble side', s1, 'Хаана явна?');
+  const bw = textWidth('700 30px Manrope', 'Хаана явна?') + 48;
+
+  const bandPos = (t) => ease.inOut(prog(t, hit['явааг'] - 0.12, 0.32)) + ease.inOut(prog(t, hit['хянаад'] - 0.12, 0.32));
 
   every((t) => {
-    // Phone rise, then a push towards the map on «Бусдыг нь».
+    // Phone rise, then a push into «Замд яваа» on «Бусдыг нь».
     const rise = spring(t + 0.16, { freq: 1.6, damping: 0.78 });
     const push = ease.inOut(prog(t, hit['бусдыг'] - 0.08, 0.9));
-    phone.style.transformOrigin = `${PH.w / 2}px 760px`;
-    tf(phone, 0, (1 - rise) * 1250 - push * 120, 1 + push * 0.08, (1 - rise) * -9);
+    phone.style.transformOrigin = `${PH.bez + LIST.x + LIST.w - 40}px ${PH.bez + LIST.y + rows[2].y + 36}px`;
+    tf(phone, 0, (1 - rise) * 1250 - push * 70, 1 + push * 0.2, (1 - rise) * -9);
 
-    // App header: logo pops on «апп», title rises.
-    const lp = spring(t - (hit['апп'] - 0.12), { freq: 2.2, damping: 0.6 });
-    appLogoWrap.style.transform = `scale(${Math.max(0, lp)})`;
-    appTitle.set(ease.out(prog(t, hit['апп'], 0.7)));
+    // Header, wallet and list build as the orders are named.
+    title.set(ease.out(prog(t, 0.05, 0.6)));
+    drawIcon(search, prog(t, 0.2, 0.6));
+    const wk = ease.out(prog(t, hit['захиалгуудаа'] - 0.5, 0.7));
+    wallet.style.clipPath = `inset(0 ${(1 - wk) * 100}% 0 0 round 22px)`;
+    drawIcon(wIc, prog(t, hit['захиалгуудаа'] - 0.3, 0.6));
+    const lk = ease.out(prog(t, hit['захиалгуудаа'] - 0.36, 0.8));
+    list.style.clipPath = `inset(0 0 ${(1 - lk) * 100}% 0 round 26px)`;
+    const lostK = ease.out(prog(t, hit['захиалгуудаа'] + 0.2, 0.6));
+    lost.style.clipPath = `inset(0 ${(1 - lostK) * 100}% 0 0 round 22px)`;
+    drawIcon(lostIc, prog(t, hit['захиалгуудаа'] + 0.3, 0.6));
 
-    // Orders slide up into the list; the first is selected on «хаана», the others drop away.
+    // The «Захиалгууд» tab lights up on «апп».
+    const tabK = spring(t - (hit['апп'] - 0.08), { freq: 2.4, damping: 0.55 });
+    const on = t >= hit['апп'] - 0.08;
+    tabs[1].ic.el.setAttribute('stroke', on ? C.green : '#9aa0a6');
+    tabs[1].lb.style.color = on ? C.green : '';
+    tabs[1].iw.style.transform = `scale(${on ? 1 + 0.25 * Math.sin(Math.PI * clamp(tabK)) : 1})`;
+    const sk = spring(t - (hit['апп'] + 0.05), { freq: 2.2, damping: 0.5 });
+    scanBtn.style.transform = `scale(${0.82 + 0.18 * sk})`;
+
+    // Tracking: the highlight lands on «Хүлээгдэж байна» on «хаана», steps to «Агуулахад»
+    // on «явааг» and to «Замд яваа» on «хянаад»; passed statuses get a check.
+    const pos = bandPos(t);
+    const bk = ease.out(prog(t, hit['хаана'] - 0.1, 0.45));
+    box(band, 8, LIST.pad + pos * LIST.row + 4, LIST.w - 16, LIST.row - 8);
+    band.style.clipPath = `inset(0 ${(1 - bk) * 100}% 0 0 round 18px)`;
+    shown(band, bk > 0);
+    const wait = ease.out(prog(t, hit['хүлээж'] - 0.05, 0.5));
     rows.forEach((r, i) => {
-      const k = ease.out(prog(t, hit['захиалгуудаа'] - 0.42 + i * 0.1, 0.75));
-      const drop = i === 0 ? 0 : ease.inStrong(prog(t, hit['хаана'] - 0.28 + (2 - i) * 0.05, 0.42));
-      r.el.style.clipPath = `inset(${(1 - k) * 100}% 0 0 0 round 30px)`;
-      tf(r.el, 0, (1 - k) * 70 + drop * 900);
-      shown(r.el, k > 0 && drop < 1);
-      drawIcon(r.icon, prog(t, hit['захиалгуудаа'] - 0.2 + i * 0.1, 0.8));
-      if (i === 0) r.el.style.boxShadow = `inset 0 0 0 ${3.5 * ease.out(prog(t, hit['хаана'] - 0.1, 0.4))}px ${C.green}`;
+      const k = ease.out(prog(t, hit['захиалгуудаа'] - 0.3 + i * 0.06, 0.6));
+      tf(r.row, 0, (1 - k) * 26);
+      drawIcon(r.ic, prog(t, hit['захиалгуудаа'] - 0.2 + i * 0.06, 0.7));
+      drawIcon(r.chev, prog(t, hit['захиалгуудаа'] + i * 0.06, 0.4));
+      const passAt = i === 0 ? hit['явааг'] + 0.06 : i === 1 ? hit['хянаад'] + 0.06 : Infinity;
+      const pk = spring(t - passAt, { freq: 2.6, damping: 0.55 });
+      r.done.style.transform = `scale(${Math.max(0, pk)})`;
+      shown(r.done, pk > 0.001);
+      drawIcon(r.doneIc, prog(t, passAt + 0.05, 0.3));
+      shown(r.chevWrap, pk < 0.3 && !(i === 2 && t >= hit['хянаад'] + 0.1));
+      const reached = bk > 0 && pos >= i - 0.5 && i <= 2;
+      r.text.style.color = reached ? C.green : C.ink;
+      r.text.style.fontWeight = reached ? '700' : '600';
+      op(r.row, i > 2 ? 1 - 0.55 * wait : 1);
     });
-
-    // Map opens downward from under the first order.
-    const mk = ease.out(prog(t, hit['хаана'] - 0.08, 0.7));
-    map.style.clipPath = `inset(0 0 ${(1 - mk) * 100}% 0 round 34px)`;
-    shown(map, mk > 0);
-    routeBase.setAttribute('stroke-dasharray', `${ease.inOut(prog(t, hit['хаана'] + 0.05, 0.75))} 1`);
-    startDot.setAttribute('r', 13 * spring(t - (hit['хаана'] + 0.02), { freq: 2.4, damping: 0.6 }));
-    const pinK = spring(t - (hit['хаана'] + 0.55), { freq: 2.2, damping: 0.55 });
-    endPin.setAttribute('transform', `translate(572 352) scale(${Math.max(0, pinK)})`);
-    lblChina.set(ease.out(prog(t, hit['хаана'] + 0.12, 0.6)));
-    lblUB.set(ease.out(prog(t, hit['хаана'] + 0.62, 0.6)));
-
-    // The parcel dot drops on «явааг», rides on «хянаад», and creeps while she waits.
-    const u = parcelU(t);
-    const p = routeTrail.getPointAtLength(u * route1Len);
-    const dk = spring(t - (hit['явааг'] - 0.06), { freq: 2.4, damping: 0.5 });
-    parcelDot.setAttribute('transform', `translate(${p.x} ${p.y}) scale(${Math.max(0, dk)})`);
-    shown(parcelDot, dk > 0.001);
-    routeTrail.setAttribute('stroke-dasharray', `${t > hit['явааг'] ? u : 0} 1`);
-    // A ripple every 0.75 s from «явааг» while the dot waits.
-    const rp = t > hit['явааг'] + 0.2 ? ((t - hit['явааг'] - 0.2) % 0.75) / 0.75 : -1;
-    ripple.setAttribute('cx', p.x);
-    ripple.setAttribute('cy', p.y);
-    ripple.setAttribute('r', 22 + 46 * ease.outSoft(Math.max(0, rp)));
-    ripple.setAttribute('stroke-opacity', rp < 0 ? 0 : 0.55 * (1 - rp));
-
-    // «Хаана явна?» bubble pops above the dot, then leaves as tracking starts.
-    const bIn = spring(t - (hit['явааг'] + 0.05), { freq: 2.2, damping: 0.62 });
-    const bOut = ease.in(prog(t, hit['хүлээж'] - 0.1, 0.25));
-    const bw = textWidth('700 27px Manrope', 'Хаана явна?') + 44;
-    box(bubble, p.x - bw / 2, p.y - 108);
-    bubble.style.transformOrigin = '50% 120%';
-    bubble.style.transform = `scale(${Math.max(0, bIn * (1 - bOut))})`;
-    shown(bubble, bIn > 0.01 && bOut < 1);
-
-    // Steps: «Агуулах» done when the map opens, «Замд» on «хянаад», then the wait.
-    const s2 = ease.inOut(prog(t, hit['хянаад'] - 0.02, 0.8));
-    stepFill.setAttribute('stroke-dasharray', `${0.5 * s2} 1`);
-    const lit = [mk >= 1 ? 1 : 0, s2 >= 0.99 ? 1 : 0, 0];
-    steps.forEach((s, i) => {
-      const sk = ease.out(prog(t, hit['хаана'] + 0.3 + i * 0.08, 0.5));
-      s.g.setAttribute('transform', `translate(${stepXs[i]} ${STEP_Y}) scale(${sk})`);
-      s.ring.setAttribute('stroke', lit[i] ? C.green : '#cfdccd');
-      s.ring.setAttribute('fill', lit[i] && i === 0 ? C.green : '#fff');
-      stepLabels[i].set(ease.out(prog(t, hit['хаана'] + 0.36 + i * 0.08, 0.6)));
-      stepLabels[i].inner.style.color = i === 1 && lit[1] ? C.green : i === 0 ? C.ink : C.muted;
-    });
-    // Waiting: three dots bounce after «Замд».
-    const wk = ease.out(prog(t, hit['хүлээж'] - 0.05, 0.4));
-    const lw = textWidth('700 25px Manrope', 'Замд');
+    const ck = spring(t - (hit['хянаад'] + 0.1), { freq: 2.4, damping: 0.5 });
+    parcelDot.style.transform = `scale(${Math.max(0, ck)})`;
+    shown(parcelDot, ck > 0.001);
+    // A ripple every 0.75 s from the chip while she waits.
+    const rp = t > hit['хүлээж'] ? ((t - hit['хүлээж']) % 0.75) / 0.75 : -1;
+    ripple.style.transform = `scale(${1 + 1.1 * ease.outSoft(Math.max(0, rp))})`;
+    ripple.style.opacity = rp < 0 ? 0 : 0.7 * (1 - rp);
+    const lw = textWidth('700 27px Manrope', 'Замд яваа');
     waitDots.forEach((d, i) => {
       const bounce = Math.max(0, Math.sin((t - hit['хүлээж']) * 9 - i * 0.9)) * 7;
-      d.setAttribute('cx', stepXs[1] + lw / 2 + 12 + i * 13);
-      d.setAttribute('cy', STEP_Y - 46 - bounce * wk);
-      d.setAttribute('r', 4.5 * wk);
+      box(d, 84 + lw + 12 + i * 15, rows[2].y + 40 - bounce * wait, 9, 9);
+      d.style.transform = `scale(${wait})`;
     });
+    // «Хаана явна?» rides beside the highlight until tracking lands.
+    const bIn = spring(t - (hit['хаана'] + 0.05), { freq: 2.2, damping: 0.62 });
+    const bOut = ease.in(prog(t, hit['хүлээж'] - 0.12, 0.25));
+    const rowMid = PH.y + (1 - rise) * 1250 + PH.bez + LIST.y + LIST.pad + pos * LIST.row + LIST.row / 2;
+    box(bubble, PH.x + PH.bez + LIST.x - bw - 6, rowMid - 32);
+    bubble.style.transformOrigin = '100% 50%';
+    bubble.style.transform = `scale(${Math.max(0, bIn * (1 - bOut))})`;
+    shown(bubble, bIn > 0.01 && bOut < 1);
   });
 
   // ============================================================== 2–3. Brand green
