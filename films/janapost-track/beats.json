@@ -1,5 +1,5 @@
 {
-  "source": "sequence.srt",
+  "source": "../janapost-shared/sequence.srt",
   "sequenceStart": 16.683,
   "duration": 9.37603,
   "cues": [

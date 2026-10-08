@@ -12,6 +12,7 @@
 //
 // Options: --fps N  --from S --to S (range)  --offset S (sheet sample offset after each hit)
 //          --cols N --thumb PX (sheet layout)  --out PATH
+//          --query STR (extra page query, e.g. --query backdrop to review an overlay over footage)
 import { spawn } from 'node:child_process';
 import { copyFileSync, createReadStream, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
@@ -36,7 +37,7 @@ mkdirSync(outDir, { recursive: true });
 
 // Films load ES modules and fonts, which file:// blocks, so serve the films folder; films
 // share fonts and code through films/shared.
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png', '.wav': 'audio/wav' };
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.wav': 'audio/wav' };
 const root = path.dirname(filmDir);
 const server = http.createServer((req, res) => {
   const file = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname));
@@ -56,7 +57,8 @@ const pageErrors = [];
 page.on('pageerror', (err) => pageErrors.push(err.message));
 page.on('console', (msg) => msg.type() === 'error' && pageErrors.push(msg.text()));
 
-await page.goto(`${base}/${encodeURIComponent(name)}/index.html?render`);
+const query = opt('query', '');
+await page.goto(`${base}/${encodeURIComponent(name)}/index.html?render${query ? `&${query}` : ''}`);
 await page.waitForFunction(() => window.FILM && typeof window.seek === 'function');
 await page.evaluate(async () => {
   await window.ready;

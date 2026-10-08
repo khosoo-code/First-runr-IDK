@@ -1,0 +1,39 @@
+/* Jana Post overlay: white stickers over the footage, brand green #1b8918 as the one accent.
+   Display face Montserrat (800/900), UI face Manrope (600/700). Transparent background. */
+:root {
+  --green: #1b8918;
+  --ink: #10140f;
+  --tint: #e3f0e2;
+  --muted: #7d867b;
+  --display: 'Montserrat', sans-serif;
+  --ui: 'Manrope', sans-serif;
+}
+html, body { margin: 0; background: transparent; }
+#stage {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: var(--ui);
+  transform-origin: 0 0;
+}
+.abs { position: absolute; left: 0; top: 0; }
+#backdrop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.mask { overflow: hidden; padding: 0.1em 0.04em 0.18em; margin: -0.1em -0.04em -0.18em; white-space: nowrap; }
+.mask > * { display: inline-block; }
+
+/* Stickers: white pills and cards with a soft drop shadow so they hold on a light wall. */
+.sticker { background: #fff; box-shadow: 0 22px 40px -18px rgba(16, 20, 15, 0.45), 0 4px 10px -4px rgba(16, 20, 15, 0.18); }
+.pill { border-radius: 34px; }
+.pill-text { font: 800 60px/1 var(--display); letter-spacing: -0.03em; white-space: nowrap; }
+.big-pill { background: var(--green); border-radius: 38px; box-shadow: 0 24px 40px -18px rgba(16, 20, 15, 0.5); }
+.big-text { font: 900 74px/1 var(--display); letter-spacing: -0.035em; color: #fff; white-space: nowrap; }
+.card { border-radius: 36px; }
+.logo-tile { border-radius: 26px; overflow: hidden; }
+.logo-tile img { display: block; width: 100%; height: 100%; }
+.disc { background: var(--tint); border-radius: 50%; display: grid; place-items: center; }
+.shop { font: 700 30px/1 var(--ui); color: var(--muted); white-space: nowrap; }
+.item { font: 800 56px/1 var(--display); letter-spacing: -0.03em; white-space: nowrap; }
+.check { background: var(--green); border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 6px #fff, 0 12px 20px -10px rgba(16, 20, 15, 0.5); }

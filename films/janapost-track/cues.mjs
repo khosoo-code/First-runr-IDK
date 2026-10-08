@@ -1,4 +1,4 @@
-// Builds beats.json for this film from the reel's SRT (sequence.srt, a copy of C6751.srt).
+// Builds beats.json for this film from the reel's SRT (../janapost-shared/sequence.srt, a copy of C6751.srt).
 // The clip runs 00;00;16;20 → 00;00;26;01 on a 29.97 fps sequence: 281 frames, starting
 // 0.16 s into cue 25 «Би болохлоор» and ending early in cue 39 «Тэгээд л би бүх».
 //
@@ -41,7 +41,7 @@ const HITS = [
 
 buildBeats({
   dir,
-  srt: path.join(dir, 'sequence.srt'),
+  srt: path.join(dir, '../janapost-shared/sequence.srt'),
   origin: IN / FPS,
   firstCue: 25,
   lastCue: 39,
