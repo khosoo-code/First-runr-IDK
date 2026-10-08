@@ -106,6 +106,11 @@ const ICON = {
   home: ['M12 48 L50 16 L88 48', 'M24 40 V86 H76 V40'],
   scan: ['M18 38 V18 H38', 'M62 18 H82 V38', 'M82 62 V82 H62', 'M38 82 H18 V62', 'M16 50 H84'],
   wifi: ['M12 42 Q50 8 88 42', 'M26 56 Q50 34 74 56', 'M40 70 Q50 62 60 70'],
+  // Benefits and the download call to action.
+  bolt: ['M57 10 L27 55 H49 L42 90 L73 43 H51 L60 10 Z'],
+  shield: ['M50 10 L82 22 V48 C82 70 68 84 50 90 C32 84 18 70 18 48 V22 Z', 'M35 50 L46 61 L66 40'],
+  smile: ['M50 12 A38 38 0 1 1 49.9 12', 'M33 57 Q50 74 67 57', 'M38 39 V41', 'M62 39 V41'],
+  download: ['M50 14 V62', 'M30 44 L50 64 L70 44', 'M22 84 H78'],
 };
 export function lineIcon(parent, name, size, color, width) {
   const el = svg('svg', { viewBox: '0 0 100 100', width: size, height: size, fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, parent);

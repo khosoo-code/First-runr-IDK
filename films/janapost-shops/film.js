@@ -23,7 +23,7 @@ const decode = (src) => {
 };
 async function preload() {
   for (const [k, src] of Object.entries(LOGOS)) images[k] = await decode(src);
-  if (BACKDROP) images.backdrop = await decode('backdrop.jpg');
+  if (BACKDROP) images.backdrop = await decode('../janapost-shared/backdrop.jpg');
 }
 
 /** A text run that rises through a mask; returns its element and a setter for 0..1. */

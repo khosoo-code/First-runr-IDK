@@ -28,9 +28,9 @@ node render.mjs films/janapost-shops --query backdrop --sheet --offset 0.3   # r
 | File | What it does |
 | --- | --- |
 | `index.html`, `style.css` | Page skeleton and the sticker look (transparent background) |
-| `film.js` | The overlay: `window.seek(t)` paints frame t; `?backdrop` shows `backdrop.jpg` behind it for review |
+| `film.js` | The overlay: `window.seek(t)` paints frame t; `?backdrop` shows a frame of the footage behind it for review |
 | `cues.mjs`, `score.mjs` | Beat grid from the reel's SRT, and the sound effects on it |
 | `logos/` | The supplied Poizon, Pinduoduo and Taobao logos |
-| `backdrop.jpg` | A frame of the footage, for review sheets only |
+| `../janapost-shared/backdrop.jpg` | A frame of the footage, for review sheets only |
 
 Brand tokens, fonts, the Jana Post logo, line icons and boot are shared with `../janapost-track` in `../janapost-shared/brand.js`.
