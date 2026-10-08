@@ -14,15 +14,19 @@ const toSec = (stamp) => {
 };
 const round = (x) => Math.round(x * 1000) / 1000;
 
-/** hits: [[name, cue, seconds into the cue where the word lands], ...] */
-export function buildBeats({ dir, firstCue, lastCue, duration, hits }) {
-  const srt = readFileSync(SRT, 'utf8').replace(/^﻿/, '');
+/**
+ * hits: [[name, cue, seconds into the cue where the word lands], ...]
+ * srt: another reel's SRT (default: sequence.srt here). origin: the clip's start in the
+ * sequence, in seconds, when it doesn't start on firstCue (e.g. a timecode in-point).
+ */
+export function buildBeats({ dir, firstCue, lastCue, duration, hits, srt: srtFile = SRT, origin: start }) {
+  const srt = readFileSync(srtFile, 'utf8').replace(/^﻿/, '');
   const all = srt.trim().split(/\r?\n\r?\n/).map((block) => {
     const [n, times, ...text] = block.split(/\r?\n/);
     const [start, end] = times.split('-->').map(toSec);
     return { n: Number(n), start, end, text: text.join(' ').trim() };
   });
-  const origin = all.find((c) => c.n === firstCue).start;
+  const origin = start ?? all.find((c) => c.n === firstCue).start;
   const cues = all
     .filter((c) => c.n >= firstCue && c.n <= lastCue)
     .map((c) => ({ n: c.n, t0: round(c.start - origin), t1: round(c.end - origin), text: c.text }));
@@ -32,7 +36,7 @@ export function buildBeats({ dir, firstCue, lastCue, duration, hits }) {
   });
   writeFileSync(
     path.join(dir, 'beats.json'),
-    JSON.stringify({ source: '../shared/sequence.srt', sequenceStart: origin, duration, cues, hits: grid }, null, 2) + '\n',
+    JSON.stringify({ source: path.relative(dir, srtFile), sequenceStart: round(origin), duration, cues, hits: grid }, null, 2) + '\n',
   );
   console.log(`beats.json: ${cues.length} cues, ${grid.length} hits, ${cues[0].text} → ${cues.at(-1).text} (${cues.at(-1).t1}s of ${duration}s), starts at ${origin}s in the sequence`);
 }

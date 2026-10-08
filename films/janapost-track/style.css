@@ -1,0 +1,58 @@
+/* Jana Post look: brand green from the logo, white app surfaces, rounded cards.
+   Display face Montserrat (800/900), UI face Manrope (600/700). */
+:root {
+  --green: #1b8918;
+  --ink: #10140f;
+  --mist: #f2f5f1;
+  --tint: #e3f0e2;
+  --map: #e9f2e8;
+  --muted: #7d867b;
+  --display: 'Montserrat', sans-serif;
+  --ui: 'Manrope', sans-serif;
+}
+html, body { margin: 0; background: #111; }
+#stage {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  background: var(--mist);
+  color: var(--ink);
+  font-family: var(--ui);
+  transform-origin: 0 0;
+}
+.abs { position: absolute; left: 0; top: 0; }
+
+/* Text that rises through a mask; the padding keeps Cyrillic breves and descenders inside. */
+.mask { overflow: hidden; padding: 0.1em 0.04em 0.18em; margin: -0.1em -0.04em -0.18em; white-space: nowrap; }
+.mask > * { display: inline-block; }
+.h1 { font: 800 112px/1 var(--display); letter-spacing: -0.035em; color: var(--ink); }
+.h1w { font: 900 124px/1 var(--display); letter-spacing: -0.035em; color: #fff; }
+.green { color: var(--green); }
+.pill { background: #fff; color: var(--green); border-radius: 0.22em; padding: 0.04em 0.16em 0.08em; }
+
+/* Map-dot field behind both scenes. */
+.dots { background-image: radial-gradient(circle, rgba(16, 20, 15, 0.09) 2.6px, transparent 3.2px); background-size: 54px 54px; }
+.dots.light { background-image: radial-gradient(circle, rgba(255, 255, 255, 0.13) 2.6px, transparent 3.2px); }
+
+/* Phone and app UI */
+.phone { background: var(--ink); border-radius: 108px; box-shadow: 0 60px 90px -50px rgba(16, 20, 15, 0.5), 0 12px 28px -14px rgba(16, 20, 15, 0.28); }
+.screen { background: #fff; border-radius: 90px; overflow: hidden; }
+.island { background: var(--ink); border-radius: 24px; }
+.app-title { font: 800 48px/1 var(--display); letter-spacing: -0.025em; white-space: nowrap; }
+.row { background: var(--mist); border-radius: 30px; }
+.icon-sq { background: var(--tint); border-radius: 24px; display: grid; place-items: center; }
+.row-name { font: 700 33px/1 var(--ui); white-space: nowrap; }
+.row-sub { font: 600 24px/1 var(--ui); color: var(--muted); white-space: nowrap; letter-spacing: 0.06em; }
+.status { font: 700 25px/46px var(--ui); color: var(--green); background: var(--tint); border-radius: 23px; text-align: center; white-space: nowrap; }
+.map { background: var(--map); border-radius: 34px; overflow: hidden; }
+.map-label { font: 700 26px/1 var(--ui); white-space: nowrap; }
+.step-label { font: 700 25px/1 var(--ui); white-space: nowrap; color: var(--muted); }
+.bubble { background: var(--ink); color: #fff; font: 700 27px/1 var(--ui); padding: 15px 22px 17px; border-radius: 20px; white-space: nowrap; }
+
+/* Route scene on brand green */
+.tile { background: #fff; border-radius: 46px; display: grid; place-items: center; box-shadow: 0 30px 44px -30px rgba(0, 0, 0, 0.45); }
+.node-label { font: 700 42px/1 var(--ui); color: #fff; white-space: nowrap; }
+.tag { font: 800 36px/1 var(--display); letter-spacing: -0.01em; color: var(--green); background: #fff; border-radius: 40px; padding: 18px 30px 20px; white-space: nowrap; }
+.parcel { background: #fff; border-radius: 26px; overflow: hidden; box-shadow: 0 34px 40px -28px rgba(0, 0, 0, 0.5); }
+.tape { background: var(--tint); }
