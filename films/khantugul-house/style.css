@@ -1,11 +1,11 @@
-/* Хан Төгөл luxury overlay: deep-green ribbons, cream serif, gold italic and hairlines.
+/* Хан Төгөл overlay, viral timing in the luxury register: cream serif words pop onto
+   deep-green plates, key words in gold italic, the finale on a cream plate. No outlines.
    Display face Noto Serif Display, UI face Manrope (../shared/fonts). Transparent background. */
 :root {
   --cream: #f7f6ed;
   --green: #1e4e3e;
-  --gold: #ac905f;
+  --gold: #c4a46c; /* the brand gold #ac905f, lifted a step so it reads on the green plate */
   --display: 'Noto Serif Display', serif;
-  --ui: 'Manrope', sans-serif;
 }
 html, body { margin: 0; background: transparent; }
 #stage {
@@ -13,19 +13,16 @@ html, body { margin: 0; background: transparent; }
   width: 1080px;
   height: 1920px;
   overflow: hidden;
-  font-family: var(--ui);
   transform-origin: 0 0;
 }
 .abs { position: absolute; left: 0; top: 0; }
 #backdrop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
-/* Ribbons bleed in from the left edge; their words rise inside them. */
-.ribbon { background: var(--green); overflow: hidden; box-shadow: 0 22px 40px -22px rgba(10, 20, 16, 0.55); }
-.ribbon-edge { background: var(--gold); }
-.line { white-space: nowrap; }
-.line > span { display: inline-block; }
-.eyebrow { font: 700 27px/1 var(--ui); letter-spacing: 0.34em; text-transform: uppercase; color: var(--cream); }
-.line1 { font: 500 100px/1 var(--display); letter-spacing: -0.01em; color: var(--cream); }
-.line2 { font: italic 400 122px/1 var(--display); letter-spacing: -0.01em; color: var(--gold); }
-.diamond { background: var(--gold); transform: rotate(45deg); }
-.hairline { background: var(--gold); }
+.vline { white-space: nowrap; font: 500 118px/1 var(--display); letter-spacing: -0.012em; word-spacing: 0.04em; color: var(--cream); }
+.vw { display: inline-block; padding: 0.08em 0 0.16em; margin: -0.08em 0 -0.16em; }
+.vw.key { font-style: italic; font-weight: 400; color: var(--gold); }
+.plate { background: var(--green); border-radius: 14px; box-shadow: 0 24px 44px -24px rgba(10, 20, 16, 0.6); }
+.plate.light { background: var(--cream); }
+.vline.on-light { color: var(--green); }
+.vline.on-light .vw.key { color: var(--green); }
+.medal { border-radius: 50%; display: grid; place-items: center; box-shadow: 0 20px 36px -20px rgba(10, 20, 16, 0.6); }

@@ -9,17 +9,22 @@ import { buildBeats } from '../shared/srt.mjs';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 
-// [name, cue, seconds into the cue where the word lands]. The SRT is phrase-level, so words
-// inside a cue sit at their syllable position.
+// [name, cue, seconds into the cue where the word lands]: every word, since the captions pop
+// word by word. The SRT is phrase-level, so words inside a cue sit at their syllable position.
 const HITS = [
   ['танд', 1, 0],
   ['илүү', 1, 0.15],
-  ['орон зай', 1, 0.6],
+  ['их', 1, 0.33],
+  ['орон', 1, 0.6],
   ['зай', 1, 0.92],
-  ['тав тух', 2, 0],
-  ['үнэ цэнэ', 2, 0.42],
+  ['тав', 2, 0],
+  ['тух', 2, 0.15],
+  ['үнэ', 2, 0.42],
+  ['цэнэ', 2, 0.62],
   ['хэрэгтэй', 2, 0.95],
-  ['энэ хаус', 3, 0],
+  ['байгаа', 2, 1.4],
+  ['бол', 2, 1.65],
+  ['энэ', 3, 0],
   ['хаус', 3, 0.4],
   ['танд 2', 3, 0.62],
   ['яг', 4, 0],
