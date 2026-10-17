@@ -408,10 +408,14 @@ export function hook(world, every, { numeral, current, lines, at, glideHeader = 
 }
 
 // ---------------------------------------------------------------- boot
-/** Loads fonts and beats.json, builds the film and exposes window.FILM / window.seek. */
-export function boot(build, { fps = 60, audio = 'out/mix.wav' } = {}) {
+/**
+ * Loads fonts and beats.json, builds the film and exposes window.FILM / window.seek.
+ * alpha: render with a transparent background (an overlay). preload: an optional async step
+ * (e.g. decoding images) that must finish before frame 0.
+ */
+export function boot(build, { fps = 60, audio = 'out/mix.wav', alpha = false, preload } = {}) {
   window.ready = (async () => {
-    await loadFonts();
+    await Promise.all([loadFonts(), preload?.()]);
     const beats = await (await fetch('beats.json')).json();
     const hit = Object.fromEntries(beats.hits.map((h) => [h.name, h.t]));
     const painters = [];
@@ -419,7 +423,7 @@ export function boot(build, { fps = 60, audio = 'out/mix.wav' } = {}) {
     const paint = (t) => {
       for (const p of painters) p(t);
     };
-    window.FILM = { width: W, height: H, fps, duration: beats.duration, audio };
+    window.FILM = { width: W, height: H, fps, duration: beats.duration, audio, alpha };
     window.seek = paint;
     paint(0);
     if (!RENDER) preview(paint, beats.duration);
