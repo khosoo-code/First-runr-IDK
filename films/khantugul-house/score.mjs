@@ -1,6 +1,7 @@
 // Synthesizes this overlay's sound effects on its beat grid (see ../shared/sfx.mjs) and writes
-// out/mix.wav at -14 LUFS. Effects only, to sit under the voice-over: a pop for every word as
-// it lands, a low hit under each key word, a swish on each phrase cut, and the sticker clicks.
+// out/mix.wav at -14 LUFS. Effects only, to sit under the voice-over, kept soft for the luxury
+// register: an airy swish as each line wipes in, low hits under the big lines, a pencil on the
+// gold hairlines, and a swell as board A clears for board B.
 //
 //   node films/khantugul-house/score.mjs
 import { readFileSync } from 'node:fs';
@@ -11,20 +12,29 @@ import { mixer } from '../shared/sfx.mjs';
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const beats = JSON.parse(readFileSync(path.join(dir, 'beats.json'), 'utf8'));
 const H = Object.fromEntries(beats.hits.map((h) => [h.name, h.t]));
-const { thump, whoosh, pop, click, master } = mixer(beats);
+const { thump, whoosh, tick, scribble, master } = mixer(beats);
 
-const POP = 0.04; // words pop this long before their syllable (film.js)
-// Words as they pop (зай rides with орон); key words get a low hit too.
-const WORDS = ['танд', 'илүү', 'их', 'орон', 'тав', 'тух', 'үнэ', 'цэнэ', 'хэрэгтэй', 'байгаа', 'бол', 'энэ', 'хаус', 'танд 2', 'яг', 'тохирно'];
-const KEYS = ['орон', 'үнэ', 'хэрэгтэй', 'хаус', 'тохирно'];
-WORDS.forEach((w, i) => pop(H[w] - POP, KEYS.includes(w) ? 0.15 : 0.1, ((i % 3) - 1) * 0.35));
-for (const w of KEYS) thump(H[w] - POP, w === 'тохирно' ? 0.6 : 0.38);
-// Phrase cuts: a short swish into each new page.
-for (const w of ['тав', 'хэрэгтэй', 'энэ', 'яг']) {
-  whoosh(H[w] - POP, { pre: 0.12, post: 0.14, from: 1500, to: 4500, gain: 0.2, panFrom: -0.4, panTo: 0.4 });
-}
-// Stickers: the house on «хаус», the check on «тохирно».
-click(H['хаус'] + 0.1, 0.12);
-click(H['тохирно'] + 0.32, 0.15);
+const LEAD = 0.12; // words start their wipe this long before the syllable (film.js)
+const swish = (t, gain, p = 0) => whoosh(t, { pre: 0.22, post: 0.3, from: 900, to: 3800, gain, panFrom: p - 0.4, panTo: p + 0.4 });
+
+// Board A
+swish(H['танд'] - LEAD + 0.15, 0.22, -0.2);
+for (const w of ['танд', 'илүү', 'их']) tick(H[w] - 0.02, 0.05, -0.3, 3000);
+thump(H['орон'] - 0.04, 0.45);
+swish(H['орон'] + 0.1, 0.24);
+scribble(H['зай'] + 0.15, 0.7, 0.035, 0);
+swish(H['тав'] + 0.1, 0.18, 0.2);
+tick(H['үнэ'] - 0.02, 0.06, 0.3, 2800);
+swish(H['хэрэгтэй'] + 0.1, 0.14, -0.2);
+// Board A clears for B
+whoosh(H['энэ'] - 0.25, { pre: 0.25, post: 0.3, from: 3200, to: 700, gain: 0.26, panFrom: -0.5, panTo: 0.5 });
+// Board B
+thump(H['энэ'] - 0.04, 0.45);
+thump(H['хаус'] - 0.04, 0.35);
+tick(H['танд 2'] - 0.02, 0.06, 0, 3000);
+thump(H['яг'] - 0.04, 0.35);
+thump(H['тохирно'] - 0.04, 0.6);
+swish(H['тохирно'] + 0.1, 0.24, 0.1);
+scribble(H['тохирно'] + 0.3, 0.7, 0.035, 0);
 
 master(path.join(dir, 'out'));

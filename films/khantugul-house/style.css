@@ -1,11 +1,10 @@
-/* Хан Төгөл overlay, viral timing in the luxury register: cream serif words pop onto
-   deep-green plates, key words in gold italic, the finale on a cream plate. No outlines.
-   Display face Noto Serif Display, UI face Manrope (../shared/fonts). Transparent background. */
+/* Хан Төгөл overlay: tracked Montserrat capitals in white, key words and hairlines in gold.
+   No boxes, no outlines: a soft shadow keeps the white readable on the bright footage.
+   Transparent background. */
 :root {
-  --cream: #f7f6ed;
-  --green: #1e4e3e;
-  --gold: #c4a46c; /* the brand gold #ac905f, lifted a step so it reads on the green plate */
-  --display: 'Noto Serif Display', serif;
+  --gold: #f2c14e; /* the brand gold #ac905f, richer and brighter so it parts from the beige facade */
+  --display: 'Montserrat', sans-serif;
+  --shadow: 0 2px 4px rgba(10, 14, 12, 0.55), 0 4px 18px rgba(10, 14, 12, 0.5), 0 10px 50px rgba(10, 14, 12, 0.35);
 }
 html, body { margin: 0; background: transparent; }
 #stage {
@@ -18,11 +17,10 @@ html, body { margin: 0; background: transparent; }
 .abs { position: absolute; left: 0; top: 0; }
 #backdrop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
-.vline { white-space: nowrap; font: 500 118px/1 var(--display); letter-spacing: -0.012em; word-spacing: 0.04em; color: var(--cream); }
-.vw { display: inline-block; padding: 0.08em 0 0.16em; margin: -0.08em 0 -0.16em; }
-.vw.key { font-style: italic; font-weight: 400; color: var(--gold); }
-.plate { background: var(--green); border-radius: 14px; box-shadow: 0 24px 44px -24px rgba(10, 20, 16, 0.6); }
-.plate.light { background: var(--cream); }
-.vline.on-light { color: var(--green); }
-.vline.on-light .vw.key { color: var(--green); }
-.medal { border-radius: 50%; display: grid; place-items: center; box-shadow: 0 20px 36px -20px rgba(10, 20, 16, 0.6); }
+.ln { white-space: nowrap; color: #fff; text-shadow: var(--shadow); text-transform: uppercase; }
+.ln > span { display: inline-block; }
+.small { font: 800 46px/1 var(--display); letter-spacing: 0.34em; }
+.mid { font: 800 62px/1 var(--display); letter-spacing: 0.08em; }
+.big { font: 800 132px/1 var(--display); letter-spacing: 0.01em; }
+.gold { color: var(--gold); }
+.hair { background: var(--gold); box-shadow: 0 3px 14px rgba(12, 16, 14, 0.4); }

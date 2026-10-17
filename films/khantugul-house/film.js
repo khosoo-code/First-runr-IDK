@@ -1,63 +1,66 @@
-// Хан Төгөл house clip: viral word-by-word timing in the luxury register. «танд илүү их орон
-// зай / тав тух, үнэ цэнэ хэрэгтэй байгаа бол / Энэ Хаус танд яг тохирно». 1080×1920, 30 fps,
-// 171 frames, transparent.
+// Хан Төгөл house clip: luxury text overlay. «танд илүү их орон зай / тав тух, үнэ цэнэ
+// хэрэгтэй байгаа бол / Энэ Хаус танд яг тохирно». 1080×1920, 30 fps, 171 frames, transparent.
 //
-// Words pop in one at a time on their spoken syllable and each phrase snap-cuts in with a soft
-// zoom punch, as in viral captions, but dressed as Хан Төгөл: cream Noto Serif Display on
-// deep-green plates that widen as the words arrive (the bright footage needs a backing; no
-// outlines), key words in gold italic, a gold house medallion on «хаус», and the finale «Яг
-// тохирно» on a cream plate with a check medallion. Everything sits above her head
-// (y 170–560), clear of the burned-in subtitles at the bottom.
+// Two boards build word by word and hold, instead of cutting phrase by phrase:
+//   A (0.2–3.0 s)  ТАНД ИЛҮҮ ИХ / ОРОН ЗАЙ / ТАВ ТУХ · ҮНЭ ЦЭНЭ / ХЭРЭГТЭЙ БАЙГАА БОЛ
+//   B (3.1–5.7 s)  ЭНЭ ХАУС / ТАНД / ЯГ ТОХИРНО
+// Tracked Montserrat capitals in white with a soft shadow (no boxes, no outlines), key words
+// and hairlines in gold. Each word wipes in on its spoken syllable; board A wipes off before B.
+// Everything sits above her head (y 190–550), clear of the burned-in subtitles at the bottom.
 //
 // Pure function of time: window.seek(t) paints frame t. Add ?backdrop to review it over a
 // frame of the footage (render.mjs --query backdrop); the render itself stays transparent.
-import { ease, lerp, prog, spring } from '../shared/motion.js';
-import { $, boot, box, shown, svg } from '../shared/kit.js';
+import { ease, prog } from '../shared/motion.js';
+import { $, boot, box, shown } from '../shared/kit.js';
 
 const W = 1080;
+const MAX_W = 960;
 const BACKDROP = new URLSearchParams(location.search).has('backdrop');
+const SUBSETS = {
+  latin: 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD',
+  'latin-ext': 'U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF',
+  cyrillic: 'U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116',
+  'cyrillic-ext': 'U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F',
+};
 let backdrop;
+/** Montserrat 600/800 (from ../cargo-shared/fonts) and, for review, the backdrop frame. */
 async function preload() {
-  if (!BACKDROP) return;
-  backdrop = new Image();
-  backdrop.src = 'backdrop.jpg';
-  await backdrop.decode();
-}
-
-const BASE = 118; // px; a line shrinks to fit MAX_W
-const MAX_W = 920;
-const LINE_Y = [292, 458]; // line centres
-const PAD = 0.36; // plate padding either side, em
-const POP = 0.04; // a word pops this long before its syllable
-
-// Pages: lines of words; * marks a key word (gold italic). The last page puts its second line
-// on a cream plate.
-// «зай» lands only 0.15 s before the next phrase, so «орон зай» pops as one word on «орон».
-const PAGES = [
-  { lines: [['танд', 'илүү', 'их'], ['орон зай*']] },
-  { lines: [['тав', 'тух,'], ['үнэ*', 'цэнэ*']] },
-  { lines: [['хэрэгтэй*'], ['байгаа', 'бол']] },
-  { lines: [['энэ', 'хаус*'], ['танд 2']], sticker: 'house' },
-  { lines: [['яг'], ['тохирно*']], boxed: true, sticker: 'check' },
-];
-
-/** A round medallion: the gold house on green, or the green check on cream with a gold ring. */
-function medal(parent, kind, size) {
-  const el = $('div', 'abs medal', parent);
-  box(el, 0, 0, size, size);
-  el.style.background = kind === 'house' ? 'var(--green)' : 'var(--cream)';
-  if (kind === 'check') el.style.boxShadow += ', inset 0 0 0 5px var(--gold)';
-  const icon = svg('svg', { viewBox: '0 0 100 100', width: size * 0.62, height: size * 0.62, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, el);
-  if (kind === 'house') {
-    const st = { stroke: 'var(--gold)', 'stroke-width': 6 };
-    svg('path', { d: 'M12 48 L50 16 L88 48', ...st }, icon);
-    svg('path', { d: 'M22 40 V86 H78 V40', ...st }, icon);
-    svg('path', { d: 'M42 86 V62 H58 V86', ...st }, icon);
-  } else {
-    svg('path', { d: 'M28 52 L44 67 L73 36', stroke: 'var(--green)', 'stroke-width': 10 }, icon);
+  const loads = [];
+  for (const weight of [600, 800]) {
+    for (const [subset, range] of Object.entries(SUBSETS)) {
+      const url = new URL(`../cargo-shared/fonts/montserrat-${subset}-${weight}-normal.woff2`, import.meta.url);
+      const face = new FontFace('Montserrat', `url(${url})`, { weight: String(weight), unicodeRange: range });
+      document.fonts.add(face);
+      loads.push(face.load());
+    }
   }
-  return el;
+  if (BACKDROP) {
+    backdrop = new Image();
+    backdrop.src = 'backdrop.jpg';
+    loads.push(backdrop.decode());
+  }
+  await Promise.all(loads);
 }
+
+// Each word: [text, its word in beats.json, extra class]. A line's top is y. «хэрэгтэй байгаа
+// бол» comes in whole on «хэрэгтэй»: its last words land as board A has to clear for B.
+const BOARDS = [
+  [
+    { cls: 'small', y: 190, words: [['Танд', 'танд'], ['илүү', 'илүү'], ['их', 'их']] },
+    { cls: 'big gold', y: 252, words: [['Орон', 'орон'], ['зай', 'зай']] },
+    { hair: 150, y: 404, at: 'зай' },
+    { cls: 'mid', y: 428, words: [['Тав', 'тав'], ['тух', 'тух'], ['·', 'үнэ'], ['үнэ', 'үнэ'], ['цэнэ', 'цэнэ']] },
+    { cls: 'small', size: 36, y: 510, words: [['Хэрэгтэй байгаа бол', 'хэрэгтэй']] },
+  ],
+  [
+    { cls: 'big', y: 196, words: [['Энэ', 'энэ'], ['хаус', 'хаус', 'gold']] },
+    { cls: 'small', y: 354, words: [['танд', 'танд 2']] },
+    { cls: 'big', size: 108, y: 420, words: [['яг', 'яг'], ['тохирно', 'тохирно', 'gold']] },
+    { hair: 220, y: 546, at: 'тохирно', delay: 0.3 },
+  ],
+];
+const LEAD = 0.12; // a word starts its wipe this long before its syllable
+const WIPE = 0.7; // and takes this long
 
 boot(({ hit, world, every }) => {
   if (BACKDROP) {
@@ -65,82 +68,66 @@ boot(({ hit, world, every }) => {
     world.parentNode.insertBefore(backdrop, world);
   }
 
-  const pages = PAGES.map((p) => {
+  const boards = BOARDS.map((spec) => {
     const el = $('div', 'abs', world);
     box(el, 0, 0, W, 760);
-    const lines = p.lines.map((names, li) => {
-      const light = p.boxed && li === 1;
-      const plate = $('div', `abs plate${light ? ' light' : ''}`, el);
-      const line = $('div', `abs vline${light ? ' on-light' : ''}`, el);
-      const words = names.map((raw, wi) => {
-        const text = raw.replace('*', '').replace(/ \d$/, ''); // shown, with punctuation
-        const name = raw.replace('*', '').replace(/[,.!]$/, ''); // its word in beats.json
-        if (wi) line.append(' ');
-        const s = $('span', `vw${raw.endsWith('*') ? ' key' : ''}`, line, text);
-        // A two-word key («орон зай») pops as one, on its first word.
-        return { name, s, at: hit[name] ?? hit[name.split(' ')[0]] };
+    const lines = spec.map((l) => {
+      if (l.hair) {
+        const hair = $('div', 'abs hair', el);
+        box(hair, (W - l.hair) / 2, l.y, l.hair, 3);
+        return { hair, at: hit[l.at] + (l.delay ?? 0.15) };
+      }
+      const line = $('div', `abs ln ${l.cls}`, el);
+      if (l.size) line.style.fontSize = `${l.size}px`;
+      const words = l.words.map(([text, name, cls], i) => {
+        if (i) line.append(' ');
+        return { s: $('span', cls ?? '', line, text), at: hit[name] };
       });
-      // Fit the line to MAX_W, then centre it on its row.
-      line.style.fontSize = `${BASE}px`;
-      const size = Math.min(BASE * (light ? 1.1 : 1), (BASE * MAX_W) / line.offsetWidth);
-      line.style.fontSize = `${size}px`;
-      const w = line.offsetWidth;
-      const x = (W - w) / 2;
-      box(line, x, LINE_Y[li] - size * 0.56);
-      // Plate edges as each word arrives: from the first word's left to the latest word's right.
-      const pad = PAD * size;
-      const rights = words.map((wd) => x + wd.s.offsetLeft + wd.s.offsetWidth + pad);
-      const plateBox = { left: x - pad, top: LINE_Y[li] - size * 0.66, h: size * 1.32 };
-      return { line, plate, words, size, w, x, rights, plateBox };
+      // Centre on the letters: tracking adds space after the last one too.
+      let ls = parseFloat(getComputedStyle(line).letterSpacing) || 0;
+      if (line.offsetWidth - ls > MAX_W) {
+        const size = (parseFloat(getComputedStyle(line).fontSize) * MAX_W) / (line.offsetWidth - ls);
+        line.style.fontSize = `${size}px`;
+        ls = parseFloat(getComputedStyle(line).letterSpacing) || 0;
+      }
+      box(line, (W - (line.offsetWidth - ls)) / 2, l.y);
+      return { line, words };
     });
-    let md = null;
-    if (p.sticker) {
-      // Beside the word it celebrates: «хаус» or «тохирно».
-      const house = p.sticker === 'house';
-      const host = house ? lines[0] : lines[1];
-      const size = house ? 128 : 116;
-      md = medal(el, p.sticker, size);
-      box(md, Math.min(host.rights.at(-1) - size * 0.28, W - size - 12), host.plateBox.top - size * 0.55);
-    }
-    return { p, el, lines, first: lines[0].words[0].at, md };
+    const first = Math.min(...lines.filter((l) => l.words).map((l) => l.words[0].at));
+    return { el, lines, first };
   });
 
   every((t) => {
-    pages.forEach((pg, i) => {
-      const next = pages[i + 1];
-      // Cut: a page holds until the next one's first word pops.
-      const live = t >= pg.first - POP && (!next || t < next.first - POP);
-      pg.el.style.display = live ? '' : 'none';
+    boards.forEach((b, i) => {
+      const next = boards[i + 1];
+      const start = b.first - LEAD;
+      // A board holds until just before the next one, then wipes off line by line.
+      const exitAt = next ? next.first - LEAD - 0.3 : Infinity;
+      const end = next ? next.first : 5.7;
+      const live = t >= start - 0.05 && t < exitAt + 0.6;
+      b.el.style.display = live ? '' : 'none';
       if (!live) return;
-      // A soft zoom punch as the page lands, then a slow push while it holds.
-      const punch = 1 + 0.09 * (1 - ease.out(prog(t, pg.first - POP, 0.3)));
-      const push = 1 + 0.02 * prog(t, pg.first, 1.4);
-      pg.el.style.transformOrigin = `50% ${LINE_Y[0] + 70}px`;
-      pg.el.style.transform = `scale(${punch * push})`;
+      b.el.style.transformOrigin = '50% 360px';
+      b.el.style.transform = `scale(${1 + 0.03 * prog(t, start, end - start)})`;
 
-      pg.lines.forEach((l) => {
-        // The plate grows word by word; it pops up with the line's first word.
-        let right = l.rights[0];
-        l.words.forEach((wd, k) => {
-          if (k) right += (l.rights[k] - l.rights[k - 1]) * ease.out(prog(t, wd.at - POP - 0.04, 0.2));
-          const s = spring(t - (wd.at - POP), { freq: 3.0, damping: 0.5 });
-          wd.s.style.visibility = t >= wd.at - POP ? 'inherit' : 'hidden';
-          wd.s.style.transform = `translateY(${(1 - s) * 0.32 * l.size}px) scale(${Math.max(0, lerp(0.55, 1, s))})`;
+      b.lines.forEach((l, j) => {
+        const out = ease.inOut(prog(t, exitAt + j * 0.04, 0.35));
+        if (l.hair) {
+          const k = ease.inOut(prog(t, l.at, 0.7));
+          l.hair.style.transform = `scaleX(${k * (1 - out)})`;
+          shown(l.hair, k > 0 && out < 1);
+          return;
+        }
+        // Words wipe in left to right while settling up; the board wipes off the same way.
+        l.words.forEach((w) => {
+          const k = ease.out(prog(t, w.at - LEAD, WIPE));
+          w.s.style.clipPath = `inset(-60px ${(1 - k) * 100}% -80px -60px)`;
+          w.s.style.transform = `translateY(${(1 - k) * 0.22}em)`;
+          w.s.style.visibility = k > 0 ? 'inherit' : 'hidden';
         });
-        const k0 = spring(t - (l.words[0].at - POP - 0.03), { freq: 2.6, damping: 0.6 });
-        const pb = l.plateBox;
-        box(l.plate, pb.left, pb.top, right - pb.left, pb.h);
-        l.plate.style.transformOrigin = '50% 50%';
-        l.plate.style.transform = `scaleY(${Math.max(0, Math.min(1.08, k0))})`;
-        shown(l.plate, t >= l.words[0].at - POP - 0.03);
+        l.line.style.clipPath = out > 0 ? `inset(-60px -80px -80px ${out * 100}%)` : 'none';
+        l.line.style.transform = `translateY(${-out * 14}px)`;
       });
-
-      if (pg.md) {
-        const at = pg.p.sticker === 'house' ? hit['хаус'] + 0.1 : hit['тохирно'] + 0.3;
-        const k = spring(t - at, { freq: 2.4, damping: 0.5 });
-        pg.md.style.transform = `scale(${Math.max(0, k)}) rotate(${(1 - Math.min(1, k)) * -30}deg)`;
-        shown(pg.md, k > 0.001);
-      }
     });
   });
 }, { fps: 30, alpha: true, preload });
